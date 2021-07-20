@@ -2,7 +2,7 @@
 *.d
 
 .vs
-target\
+target/
 key.h
 
 
