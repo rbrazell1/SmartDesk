@@ -1,6 +1,11 @@
 # Prerequisites
 *.d
 
+.vs
+target\
+key.h
+
+
 # Compiled Object files
 *.slo
 *.lo
