@@ -3,25 +3,42 @@
 /******************************************************/
 
 #include "Particle.h"
-#line 1 "c:/Users/russe/Desktop/IoT/projects/SmartDesk/SmartDesk/src/SmartDesk.ino"
-/*
- * Project SmartDesk
- * Description:
- * Author:
- * Date:
+#line 1 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDesk/src/SmartDesk.ino"
+/**
+ * @file SmartDesk
+ * @author Russell Brazell 
+ * @brief The code needed to run the non-sit/stand version of the smart desk protype
+ * @version 0.1
+ * @date 2021-08-03
+ * 
+ * @copyright Copyright (c) 2021
+ * 
  */
 
-// setup() runs once, when the device is first turned on.
+#include <Adafruit_Fingerprint.h>
+
 void setup();
 void loop();
-#line 9 "c:/Users/russe/Desktop/IoT/projects/SmartDesk/SmartDesk/src/SmartDesk.ino"
+#line 14 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDesk/src/SmartDesk.ino"
+SYSTEM_MODE(MANUAL);
+
+int enrollmentCounter;
+
+Adafruit_Fingerprint FPScanner = Adafruit_Fingerprint(&Serial1);
+
 void setup() {
-  // Put initialization like pinMode and begin functions here.
+  Serial.begin(57600);
+  waitFor(Serial.isConnected, 3000);
+  FPScanner.begin(57600);
+  delay(3000);
 
 }
 
-// loop() runs over and over again, as quickly as it can execute.
 void loop() {
-  // The core of your code will likely live here.
-
+  while (Serial.available()) {
+    Serial1.write(Serial.read());
+  }
+  while (Serial1.available()) {
+    Serial.write(Serial1.read());
+  }
 }
