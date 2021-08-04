@@ -7,7 +7,7 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_ILI9341.h>
-#include "Adafruit_FT6206.h"
+#include <Adafruit_FT6206_Library.h>
 
 // The FT6206 uses hardware I2C (SCL/SDA)
 Adafruit_FT6206 ts = Adafruit_FT6206();

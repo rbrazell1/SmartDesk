@@ -3,7 +3,7 @@
 /******************************************************/
 
 #include "Particle.h"
-#line 1 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDesk/src/SmartDesk.ino"
+#line 1 "c:/Users/russe/Desktop/IoT/projects/SmartDesk/SmartDesk/src/SmartDesk.ino"
 //This example implements a simple sliding On/Off button. The example
 // demonstrates drawing and touch operations.
 //
@@ -13,7 +13,7 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_ILI9341.h>
-#include "Adafruit_FT6206.h"
+#include <Adafruit_FT6206_Library.h>
 
 // The FT6206 uses hardware I2C (SCL/SDA)
 void drawFrame();
@@ -21,7 +21,7 @@ void redBtn();
 void greenBtn();
 void setup(void);
 void loop();
-#line 13 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDesk/src/SmartDesk.ino"
+#line 13 "c:/Users/russe/Desktop/IoT/projects/SmartDesk/SmartDesk/src/SmartDesk.ino"
 Adafruit_FT6206 ts = Adafruit_FT6206();
 
 #define TFT_CS 10
