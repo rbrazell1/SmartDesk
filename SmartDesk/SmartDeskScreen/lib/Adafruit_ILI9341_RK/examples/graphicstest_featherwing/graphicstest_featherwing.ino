@@ -1,9 +1,3 @@
-/******************************************************/
-//       THIS IS A GENERATED FILE - DO NOT EDIT       //
-/******************************************************/
-
-#include "Particle.h"
-#line 1 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDesk/src/SmartDesk.ino"
 /***************************************************
   This is our GFX example for the Adafruit ILI9341 TFT FeatherWing
   ----> http://www.adafruit.com/products/3315
@@ -19,26 +13,9 @@
  ****************************************************/
 
 #include <SPI.h>
-#include <Adafruit_GFX.h> 
+#include <Adafruit_GFX.h>
 #include <Adafruit_ILI9341.h>
 
-
-
-void setup();
-void loop(void);
-unsigned long testFillScreen();
-unsigned long testText();
-unsigned long testLines(uint16_t color);
-unsigned long testFastLines(uint16_t color1, uint16_t color2);
-unsigned long testRects(uint16_t color);
-unsigned long testFilledRects(uint16_t color1, uint16_t color2);
-unsigned long testFilledCircles(uint8_t radius, uint16_t color);
-unsigned long testCircles(uint8_t radius, uint16_t color);
-unsigned long testTriangles();
-unsigned long testFilledTriangles();
-unsigned long testRoundRects();
-unsigned long testFilledRoundRects();
-#line 21 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDesk/src/SmartDesk.ino"
 #ifdef ESP8266
    #define STMPE_CS 16
    #define TFT_CS   0
@@ -95,9 +72,9 @@ unsigned long testFilledRoundRects();
 Adafruit_ILI9341 tft(TFT_CS, TFT_DC);
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
 
-  delay(1000);
+  delay(10);
   Serial.println("FeatherWing TFT Test!");
 
   tft.begin();
