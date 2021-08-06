@@ -3,10 +3,10 @@
 //
 //Thanks to Adafruit forums member Asteroid for the original sketch!
 //
-#include <Adafruit_GFX.h>
+#include <Adafruit_mfGFX.h>
 #include <SPI.h>
-#include <Wire.h>
 #include <Adafruit_ILI9341.h>
+#include <Wire.h>
 #include <Adafruit_FT6206.h>
 
 // The FT6206 uses hardware I2C (SCL/SDA)
