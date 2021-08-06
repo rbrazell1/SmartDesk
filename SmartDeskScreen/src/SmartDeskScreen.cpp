@@ -3,7 +3,7 @@
 /******************************************************/
 
 #include "Particle.h"
-#line 1 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDesk/SmartDeskScreen/src/SmartDeskScreen.ino"
+#line 1 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDeskScreen/src/SmartDeskScreen.ino"
 /***************************************************
   This is our GFX example for the Adafruit ILI9341 TFT FeatherWing
   ----> http://www.adafruit.com/products/3315
@@ -20,7 +20,7 @@
 
 #include <SPI.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_ILI9341.h>
+#include <Adafruit_ILI9341_RK.h>
 
 void setup();
 void loop(void);
@@ -28,13 +28,13 @@ void displaySetUp();
 unsigned long testFillScreen();
 unsigned long testRects(uint16_t color);
 unsigned long testFilledRects(uint16_t color1, uint16_t color2);
-#line 19 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDesk/SmartDeskScreen/src/SmartDeskScreen.ino"
+#line 19 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDeskScreen/src/SmartDeskScreen.ino"
 #define TFT_DC   D5
 #define TFT_CS   D4
 // #define STMPE_CS D3
 // #define SD_CS    D2
 
-Adafruit_ILI9341 tft(TFT_CS, TFT_DC, -1); 
+Adafruit_ILI9341 tft(TFT_CS, TFT_DC); 
 
 void setup() {
 displaySetUp();
