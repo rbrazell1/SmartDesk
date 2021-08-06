@@ -34,7 +34,7 @@ unsigned long testFilledRects(uint16_t color1, uint16_t color2);
 // #define STMPE_CS D3
 // #define SD_CS    D2
 
-Adafruit_ILI9341 tft(TFT_CS, TFT_DC); 
+Adafruit_ILI9341 tft1(TFT_CS, TFT_DC); 
 
 void setup() {
 displaySetUp();
