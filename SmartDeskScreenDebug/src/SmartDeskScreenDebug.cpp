@@ -4,19 +4,12 @@
 
 #include "Particle.h"
 #line 1 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDeskScreenDebug/src/SmartDeskScreenDebug.ino"
-/***************************************************
-  This is our GFX example for the Adafruit ILI9341 TFT FeatherWing
-  ----> http://www.adafruit.com/products/3315
-
-  Check out the links above for our tutorials and wiring diagrams
-
-  Adafruit invests time and resources providing this open source code,
-  please support Adafruit and open-source hardware by purchasing
-  products from Adafruit!
-
-  Written by Limor Fried/Ladyada for Adafruit Industries.
-  MIT license, all text above must be included in any redistribution
- ****************************************************/
+/*
+*   Project: SmartDesk 0.1.1
+*   Description: The code needed to run the protoType SmartDesk
+*   Author: Russell Brazell
+*   Date: 8-6-2021
+*/
 
 #include <SPI.h>
 #include <Adafruit_mfGFX.h>
@@ -33,15 +26,14 @@ void redBtn();
 void greenBtn();
 unsigned long testRects(uint16_t color);
 unsigned long testFilledRects(uint16_t color1, uint16_t color2);
-#line 21 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDeskScreenDebug/src/SmartDeskScreenDebug.ino"
+#line 14 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDeskScreenDebug/src/SmartDeskScreenDebug.ino"
 SYSTEM_MODE(MANUAL);
 
-#define TFT_DC   D5
-#define TFT_CS   D4
-// #define STMPE_CS D3
-// #define SD_CS    D2
+const int touchScreenDisplayDataCommand = D5;
+const int touchScreenDisplayCS = D4;
+const int SD_CS = D2;
 
-Adafruit_ILI9341 tft(TFT_CS, TFT_DC);
+Adafruit_ILI9341 touchScreenDisplay(touchScreenDisplayCS, touchScreenDisplayDataCommand);
 
 boolean RecordOn = false;
 
@@ -61,14 +53,14 @@ boolean RecordOn = false;
 #define GREENBUTTON_H FRAME_H
 
 // The FT6206 uses hardware I2C (SCL/SDA)
-Adafruit_FT6206 ts = Adafruit_FT6206();
+Adafruit_FT6206 capacitiveTouchScreen = Adafruit_FT6206();
 
 void setup() {
     displaySetUp();
-    tft.fillScreen(ILI9341_BLACK);
-    ts.begin(128);
+    touchScreenDisplay.fillScreen(ILI9341_BLACK);
+    capacitiveTouchScreen.begin(128);
     // origin = left,top landscape (USB left upper)
-    tft.setRotation(1);
+    touchScreenDisplay.setRotation(1);
     redBtn();
 }
 
@@ -79,14 +71,14 @@ void loop(void) {
     // See if there's any  touch data for us
     delay(100);
     Serial.printf("Checking if you touched\n");
-    // if (ts.touched()) {
+    // if (capacitiveTouchScreen.touched()) {
         // Retrieve a point  
-        TS_Point touchedPoint = ts.getPoint();
+        TS_Point touchedPoint = capacitiveTouchScreen.getPoint();
         // rotate coordinate system
         // flip it around to match the screen.
         touchedPoint.x = map(touchedPoint.x, 0, 240, 240, 0);
         touchedPoint.y = map(touchedPoint.y, 0, 320, 320, 0);
-        int y = tft.height() - touchedPoint.x;
+        int y = touchScreenDisplay.height() - touchedPoint.x;
         int x = touchedPoint.y;
 
         if (RecordOn) {
@@ -115,108 +107,94 @@ void displaySetUp() {
     delay(10);
     Serial.println("Touch Screen Test!");
 
-    tft.begin();
+    touchScreenDisplay.begin();
 
     // read diagnostics (optional but can help debug problems)
-    uint8_t x = tft.readcommand8(ILI9341_RDMODE);
+    uint8_t x = touchScreenDisplay.readcommand8(ILI9341_RDMODE);
     Serial.printf("Display Power Mode: 0x%x\n", x);
 
-    x = tft.readcommand8(ILI9341_RDMADCTL);
+    x = touchScreenDisplay.readcommand8(ILI9341_RDMADCTL);
     Serial.printf("MADCTL Mode: 0x%x\n", x);
 
-    x = tft.readcommand8(ILI9341_RDPIXFMT);
+    x = touchScreenDisplay.readcommand8(ILI9341_RDPIXFMT);
     Serial.printf("Pixel Format: 0x%x\n", x);
 
-    x = tft.readcommand8(ILI9341_RDIMGFMT);
+    x = touchScreenDisplay.readcommand8(ILI9341_RDIMGFMT);
     Serial.printf("Image Format: 0x%x\n", x);
 
-    x = tft.readcommand8(ILI9341_RDSELFDIAG);
+    x = touchScreenDisplay.readcommand8(ILI9341_RDSELFDIAG);
     Serial.printf("Self Diagnostic: 0x%x\n", x);
-
-    // Serial.println(F("Benchmark                Time (microseconds)"));
-    // delay(10);
-    // Serial.print(F("Screen fill              "));
-    // Serial.println(testFillScreen());
-    // delay(100);
-
-    // Serial.print(F("Rectangles (outline)     "));
-    // Serial.println(testRects(ILI9341_GREEN));
-    // delay(100);
-
-    // Serial.print(F("Rectangles (filled)      "));
-    // Serial.println(testFilledRects(ILI9341_YELLOW, ILI9341_MAGENTA));
-    // delay(100);
 
     Serial.println(F("Done!"));
 }
 
 unsigned long testFillScreen() {
     unsigned long start = micros();
-    tft.fillScreen(ILI9341_BLACK);
+    touchScreenDisplay.fillScreen(ILI9341_BLACK);
     yield();
-    tft.fillScreen(ILI9341_RED);
+    touchScreenDisplay.fillScreen(ILI9341_RED);
     yield();
-    tft.fillScreen(ILI9341_GREEN);
+    touchScreenDisplay.fillScreen(ILI9341_GREEN);
     yield();
-    tft.fillScreen(ILI9341_BLUE);
+    touchScreenDisplay.fillScreen(ILI9341_BLUE);
     yield();
-    tft.fillScreen(ILI9341_BLACK);
+    touchScreenDisplay.fillScreen(ILI9341_BLACK);
     yield();
     return micros() - start;
 }
 
 void drawFrame() {
-    tft.drawRect(FRAME_X, FRAME_Y, FRAME_W, FRAME_H, ILI9341_BLACK);
+    touchScreenDisplay.drawRect(FRAME_X, FRAME_Y, FRAME_W, FRAME_H, ILI9341_BLACK);
 }
 
 void redBtn() {
-    tft.fillRect(REDBUTTON_X, REDBUTTON_Y, REDBUTTON_W, REDBUTTON_H, ILI9341_RED);
-    tft.fillRect(GREENBUTTON_X, GREENBUTTON_Y, GREENBUTTON_W, GREENBUTTON_H, ILI9341_BLUE);
+    touchScreenDisplay.fillRect(REDBUTTON_X, REDBUTTON_Y, REDBUTTON_W, REDBUTTON_H, ILI9341_RED);
+    touchScreenDisplay.fillRect(GREENBUTTON_X, GREENBUTTON_Y, GREENBUTTON_W, GREENBUTTON_H, ILI9341_BLUE);
     drawFrame();
-    tft.setCursor(GREENBUTTON_X + 6, GREENBUTTON_Y + (GREENBUTTON_H / 2));
-    tft.setTextColor(ILI9341_WHITE);
-    tft.setTextSize(2);
-    tft.println("ON");
+    touchScreenDisplay.setCursor(GREENBUTTON_X + 6, GREENBUTTON_Y + (GREENBUTTON_H / 2));
+    touchScreenDisplay.setTextColor(ILI9341_WHITE);
+    touchScreenDisplay.setTextSize(2);
+    touchScreenDisplay.println("ON");
     RecordOn = false;
 }
 
 void greenBtn() {
-    tft.fillRect(GREENBUTTON_X, GREENBUTTON_Y, GREENBUTTON_W, GREENBUTTON_H, ILI9341_GREEN);
-    tft.fillRect(REDBUTTON_X, REDBUTTON_Y, REDBUTTON_W, REDBUTTON_H, ILI9341_BLUE);
+    touchScreenDisplay.fillRect(GREENBUTTON_X, GREENBUTTON_Y, GREENBUTTON_W, GREENBUTTON_H, ILI9341_GREEN);
+    touchScreenDisplay.fillRect(REDBUTTON_X, REDBUTTON_Y, REDBUTTON_W, REDBUTTON_H, ILI9341_BLUE);
     drawFrame();
-    tft.setCursor(REDBUTTON_X + 6, REDBUTTON_Y + (REDBUTTON_H / 2));
-    tft.setTextColor(ILI9341_WHITE);
-    tft.setTextSize(2);
-    tft.println("OFF");
+    touchScreenDisplay.setCursor(REDBUTTON_X + 6, REDBUTTON_Y + (REDBUTTON_H / 2));
+    touchScreenDisplay.setTextColor(ILI9341_WHITE);
+    touchScreenDisplay.setTextSize(2);
+    touchScreenDisplay.println("OFF");
     RecordOn = true;
 }
 
 
 /*
 unsigned long testText() {
-  tft.fillScreen(ILI9341_BLACK);
+  touchScreenDisplay.fillScreen(ILI9341_BLACK);
   unsigned long start = micros();
-  tft.setCursor(0, 0);
-  tft.setTextColor(ILI9341_WHITE);  tft.setTextSize(1);
-  tft.println("Hello World!");
-  tft.setTextColor(ILI9341_YELLOW); tft.setTextSize(2);
-  tft.println(1234.56);
-  tft.setTextColor(ILI9341_RED);    tft.setTextSize(3);
-  tft.println(0xDEADBEEF, HEX);
-  tft.println();
-  tft.setTextColor(ILI9341_GREEN);
-  tft.setTextSize(5);
-  tft.println("Groop");
-  tft.setTextSize(2);
-  tft.println("I implore thee,");
-  tft.setTextSize(1);
-  tft.println("my foonting turlingdromes.");
-  tft.println("And hooptiously drangle me");
-  tft.println("with crinkly bindlewurdles,");
-  tft.println("Or I will rend thee");
-  tft.println("in the gobberwarts");
-  tft.println("with my blurglecruncheon,");
-  tft.println("see if I don't!");
+  touchScreenDisplay.setCursor(0, 0);
+  touchScreenDisplay.setTextColor(ILI9341_WHITE);  touchScreenDisplay.setTextSize(1);
+  touchScreenDisplay.println("Hello World!");
+  touchScreenDisplay.setTextColor(ILI9341_YELLOW); touchScreenDisplay.setTextSize(2);
+  touchScreenDisplay.println(1234.56);
+  touchScreenDisplay.setTextColor(ILI9341_RED);    touchScreenDisplay.setTextSize(3);
+  touchScreenDisplay.println(0xDEADBEEF, HEX);
+  touchScreenDisplay.println();
+  touchScreenDisplay.setTextColor(ILI9341_GREEN);
+  touchScreenDisplay.setTextSize(5);
+  touchScreenDisplay.println("Groop");
+  touchScreenDisplay.setTextSize(2);
+  touchScreenDisplay.println("I implore thee,");
+  touchScreenDisplay.setTextSize(1);
+  touchScreenDisplay.println("my foonting turlingdromes.");
+  touchScreenDisplay.println("And hooptiously drangle me");
+  touchScreenDisplay.println("with crinkly bindlewurdles,");
+  touchScreenDisplay.println("Or I will rend thee");
+  touchScreenDisplay.println("in the gobberwarts");
+  touchScreenDisplay.println("with my blurglecruncheon,");
+  touchScreenDisplay.println("see if I don't!");
   return micros() - start;
 }
 */
@@ -224,15 +202,15 @@ unsigned long testText() {
 unsigned long testRects(uint16_t color) {
     unsigned long start;
     int n, i, i2,
-            cx = tft.width() / 2,
-            cy = tft.height() / 2;
+            cx = touchScreenDisplay.width() / 2,
+            cy = touchScreenDisplay.height() / 2;
 
-    tft.fillScreen(ILI9341_BLACK);
-    n = min(tft.width(), tft.height());
+    touchScreenDisplay.fillScreen(ILI9341_BLACK);
+    n = min(touchScreenDisplay.width(), touchScreenDisplay.height());
     start = micros();
     for (i = 2; i < n; i += 6) {
         i2 = i / 2;
-        tft.drawRect(cx - i2, cy - i2, i, i, color);
+        touchScreenDisplay.drawRect(cx - i2, cy - i2, i, i, color);
     }
 
     return micros() - start;
@@ -241,18 +219,18 @@ unsigned long testRects(uint16_t color) {
 unsigned long testFilledRects(uint16_t color1, uint16_t color2) {
     unsigned long start, t = 0;
     int n, i, i2,
-            cx = tft.width() / 2 - 1,
-            cy = tft.height() / 2 - 1;
+            cx = touchScreenDisplay.width() / 2 - 1,
+            cy = touchScreenDisplay.height() / 2 - 1;
 
-    tft.fillScreen(ILI9341_BLACK);
-    n = min(tft.width(), tft.height());
+    touchScreenDisplay.fillScreen(ILI9341_BLACK);
+    n = min(touchScreenDisplay.width(), touchScreenDisplay.height());
     for (i = n; i > 0; i -= 6) {
         i2 = i / 2;
         start = micros();
-        tft.fillRect(cx - i2, cy - i2, i, i, color1);
+        touchScreenDisplay.fillRect(cx - i2, cy - i2, i, i, color1);
         t += micros() - start;
         // Outlines are not included in timing results
-        tft.drawRect(cx - i2, cy - i2, i, i, color2);
+        touchScreenDisplay.drawRect(cx - i2, cy - i2, i, i, color2);
         yield();
     }
 
