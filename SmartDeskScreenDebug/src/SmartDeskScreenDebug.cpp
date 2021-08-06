@@ -34,6 +34,8 @@ void greenBtn();
 unsigned long testRects(uint16_t color);
 unsigned long testFilledRects(uint16_t color1, uint16_t color2);
 #line 21 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDeskScreenDebug/src/SmartDeskScreenDebug.ino"
+SYSTEM_MODE(MANUAL);
+
 #define TFT_DC   D5
 #define TFT_CS   D4
 // #define STMPE_CS D3
@@ -43,10 +45,10 @@ Adafruit_ILI9341 tft(TFT_CS, TFT_DC);
 
 boolean RecordOn = false;
 
-#define FRAME_X 210
-#define FRAME_Y 180
-#define FRAME_W 100
-#define FRAME_H 50
+#define FRAME_X 10
+#define FRAME_Y 10
+#define FRAME_W 200
+#define FRAME_H 100
 
 #define REDBUTTON_X FRAME_X
 #define REDBUTTON_Y FRAME_Y
@@ -64,6 +66,7 @@ Adafruit_FT6206 ts = Adafruit_FT6206();
 void setup() {
     displaySetUp();
     tft.fillScreen(ILI9341_BLACK);
+    ts.begin(128);
     // origin = left,top landscape (USB left upper)
     tft.setRotation(1);
     redBtn();
@@ -74,15 +77,17 @@ void loop(void) {
     // testFilledRects(ILI9341_CYAN, ILI9341_DARKGREY);
     // testRects(ILI9341_DARKGREEN);
     // See if there's any  touch data for us
-    if (ts.touched()) {
+    delay(100);
+    Serial.printf("Checking if you touched\n");
+    // if (ts.touched()) {
         // Retrieve a point  
-        TS_Point p = ts.getPoint();
+        TS_Point touchedPoint = ts.getPoint();
         // rotate coordinate system
         // flip it around to match the screen.
-        p.x = map(p.x, 0, 240, 240, 0);
-        p.y = map(p.y, 0, 320, 320, 0);
-        int y = tft.height() - p.x;
-        int x = p.y;
+        touchedPoint.x = map(touchedPoint.x, 0, 240, 240, 0);
+        touchedPoint.y = map(touchedPoint.y, 0, 320, 320, 0);
+        int y = tft.height() - touchedPoint.x;
+        int x = touchedPoint.y;
 
         if (RecordOn) {
             if ((x > REDBUTTON_X) && (x < (REDBUTTON_X + REDBUTTON_W))) {
@@ -91,8 +96,7 @@ void loop(void) {
                     redBtn();
                 }
             }
-        } else //Record is off (RecordOn == false)
-        {
+        } else {
             if ((x > GREENBUTTON_X) && (x < (GREENBUTTON_X + GREENBUTTON_W))) {
                 if ((y > GREENBUTTON_Y) && (y <= (GREENBUTTON_Y + GREENBUTTON_H))) {
                     Serial.println("Green btn hit");
@@ -102,14 +106,14 @@ void loop(void) {
         }
 
         Serial.println(RecordOn);
-    }
+    // }
 }
 
 void displaySetUp() {
     Serial.begin(115200);
 
     delay(10);
-    Serial.println("FeatherWing TFT Test!");
+    Serial.println("Touch Screen Test!");
 
     tft.begin();
 
@@ -129,19 +133,19 @@ void displaySetUp() {
     x = tft.readcommand8(ILI9341_RDSELFDIAG);
     Serial.printf("Self Diagnostic: 0x%x\n", x);
 
-    Serial.println(F("Benchmark                Time (microseconds)"));
-    delay(10);
-    Serial.print(F("Screen fill              "));
-    Serial.println(testFillScreen());
-    delay(500);
+    // Serial.println(F("Benchmark                Time (microseconds)"));
+    // delay(10);
+    // Serial.print(F("Screen fill              "));
+    // Serial.println(testFillScreen());
+    // delay(100);
 
-    Serial.print(F("Rectangles (outline)     "));
-    Serial.println(testRects(ILI9341_GREEN));
-    delay(500);
+    // Serial.print(F("Rectangles (outline)     "));
+    // Serial.println(testRects(ILI9341_GREEN));
+    // delay(100);
 
-    Serial.print(F("Rectangles (filled)      "));
-    Serial.println(testFilledRects(ILI9341_YELLOW, ILI9341_MAGENTA));
-    delay(500);
+    // Serial.print(F("Rectangles (filled)      "));
+    // Serial.println(testFilledRects(ILI9341_YELLOW, ILI9341_MAGENTA));
+    // delay(100);
 
     Serial.println(F("Done!"));
 }
