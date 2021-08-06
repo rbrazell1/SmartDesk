@@ -3,8 +3,7 @@
 
 #if defined(PARTICLE)
  #include "Particle.h"
- #define ARDUINO 157
-#elif ARDUINO >= 100
+//  #define ARDUINO 157 #elif ARDUINO >= 100
  #include "Arduino.h"
  #include "Print.h"
 #else
@@ -168,11 +167,11 @@ class Adafruit_GFX : public Print {
   /**********************************************************************/
   void cp437(boolean x=true) { _cp437 = x; }
 
-#if ARDUINO >= 100
-  virtual size_t write(uint8_t);
-#else
-  virtual void   write(uint8_t);
-#endif
+// #if ARDUINO >= 100
+//   virtual size_t write(uint8_t);
+// #else
+//   virtual void   write(uint8_t);
+// #endif
 
   /************************************************************************/
   /*!

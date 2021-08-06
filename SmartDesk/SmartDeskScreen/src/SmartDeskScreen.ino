@@ -16,14 +16,12 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_ILI9341.h>
 
-#if defined(PARTICLE)
-   #define TFT_DC   D5
-   #define TFT_CS   D4
-   #define STMPE_CS D3
-   #define SD_CS    D2
-#endif
+#define TFT_DC   D5
+#define TFT_CS   D4
+// #define STMPE_CS D3
+// #define SD_CS    D2
 
-Adafruit_ILI9341 tft(TFT_CS, TFT_DC);
+Adafruit_ILI9341 tft(TFT_CS, TFT_DC, -1); 
 
 void setup() {
 displaySetUp();
