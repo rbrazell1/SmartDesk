@@ -35,3 +35,5 @@ key.h
 *.exe
 *.out
 *.app
+
+.idea
