@@ -37,3 +37,6 @@ key.h
 *.app
 
 .idea
+
+.vscode
+
