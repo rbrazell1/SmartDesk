@@ -1,5 +1,5 @@
 /*
-*   Project: SmartDesk 0.1.1 - TOUCH SCREEN & MENU
+*   Project: SmartDesk 0.1.2 - TOUCH SCREEN & MENU
 *   Description: Screen layout and control
 *   Author: Russell Brazell
 *   Date: 8-6-2021
@@ -75,7 +75,7 @@ void setUpTouchScreen() {
     capacitiveTouchScreen.begin(TOUCH_SENSITIVITY);
     // origin = left,top landscape (USB left upper)
     touchScreenDisplay.setRotation(1);
-
+    homeButtonSelect();
 }
 
 void displaySetUp() {
@@ -107,10 +107,10 @@ void displaySetUp() {
 //    Welcome message
 
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
-    touchScreenDisplay.setCursor(((SCREEN_WIDTH / 2) - 5), ((SCREEN_HEIGHT / 2) - 3))
+    touchScreenDisplay.setCursor(((SCREEN_WIDTH / 2) - 5), ((SCREEN_HEIGHT / 2) - 3));
     touchScreenDisplay.setTextColor(ILI9341_GREEN);
     touchScreenDisplay.setTextSize(4);
-    touchScreenDisplay.printf("Welcome to\nSmart Desk\n1.0.1\n")
+    touchScreenDisplay.printf("Welcome to\nSmart Desk\n1.0.1\n");
 
 }
 
