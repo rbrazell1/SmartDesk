@@ -1,7 +1,12 @@
-/*
+// /*
 *   Project: SmartDesk 0.1.1
-*   Description: The code needed to run the protoType SmartDesk
-*   Author: Russell Brazell
+*   Description:
+The code
+needed to
+run the
+protoType SmartDesk
+*   Author:
+Russell Brazell
 *   Date: 8-6-2021
 */
 
@@ -78,7 +83,7 @@ void setup() {
 }
 
 void loop() {
-   runTouchScreen();
+    runTouchScreen();
 }
 
 void setUpTouchScreen() {
@@ -95,7 +100,7 @@ void displaySetUp() {
     waitFor(Serial.isConnected, 3000);
     Serial.println("Touch Screen Test!");
     touchScreenDisplay.begin();
-// read diagnostics (optional but can help debug problems)
+    // read diagnostics (optional but can help debug problems)
     uint8_t x = touchScreenDisplay.readcommand8(ILI9341_RDMODE);
     Serial.printf("Display Power Mode: 0x%x\n", x);
 
@@ -112,11 +117,11 @@ void displaySetUp() {
     Serial.printf("Self Diagnostic: 0x%x\n", x);
 
     Serial.println("Done!");
-//    End diagnostics
-    touchScreenDisplay.setRotation(1);      
-    testFillScreen();
-    testRects(ILI9341_PINK);
-//    Welcome message
+    //    End diagnostics
+    touchScreenDisplay.setRotation(1);
+    //    testFillScreen();
+    // testRects(ILI9341_PINK);
+    //    Welcome message
 
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
     touchScreenDisplay.setCursor(0, 80);
@@ -129,10 +134,13 @@ void displaySetUp() {
 void runTouchScreen() {
     Serial.printf("Checking if you touched anywhere\n");
     homeButtonSelect();
-    lightButton();
-    waterButton();
-    calendarButton();
-    fingerPrintButton();
+    if (newButtonPressed) {
+        lightButton();
+        waterButton();
+        calendarButton();
+        fingerPrintButton();
+        newButtonPressed = false;
+    }
 }
 
 void lightButton() {
@@ -145,13 +153,13 @@ void lightButton() {
     } else {
         touchScreenDisplay.fillRect(LIGHT_BUTTON_X_ORIGIN,
                                     LIGHT_BUTTON_Y_ORIGIN,
-                                    LIGHT_BUTTON_HEIGHT,
+                                    LIGHT_BUTTON_WIDTH,
                                     LIGHT_BUTTON_HEIGHT,
                                     ILI9341_RED);
-//        TODO make a color array to glow the button
+        //        TODO make a color array to glow the button
     }
-//    Show text, The cursor x is set with the len of the word / 2
-    touchScreenDisplay.setCursor(((LIGHT_BUTTON_WIDTH / 2) - 3), (LIGHT_BUTTON_HEIGHT / 2));
+    //    Show text
+    touchScreenDisplay.setCursor(((LIGHT_BUTTON_WIDTH / 2) - 35), (LIGHT_BUTTON_HEIGHT / 2) - 6);
     touchScreenDisplay.setTextColor(ILI9341_WHITE);
     touchScreenDisplay.setTextSize(2);
     touchScreenDisplay.printf("Lights\n");
@@ -171,11 +179,15 @@ void waterButton() {
                                     WATER_BUTTON_HEIGHT,
                                     ILI9341_BLUE);
     }
-//    Show text, The cursor x is set with the len of the word / 2
-    touchScreenDisplay.setCursor(((WATER_BUTTON_WIDTH / 2) + 2), ((WATER_BUTTON_Y_ORIGIN / 2) - 2));
+    //    Show text
+    touchScreenDisplay.setCursor((((WATER_BUTTON_WIDTH / 2) - 25) + LIGHT_BUTTON_WIDTH),
+                                 ((WATER_BUTTON_HEIGHT / 2) - 12));
     touchScreenDisplay.setTextColor(ILI9341_WHITE);
     touchScreenDisplay.setTextSize(2);
-    touchScreenDisplay.printf("Water\nScale\n");
+    touchScreenDisplay.printf("Water\n");
+    touchScreenDisplay.setCursor((((WATER_BUTTON_WIDTH / 2) - 25) + LIGHT_BUTTON_WIDTH),
+                                 ((WATER_BUTTON_HEIGHT / 2) + 6));
+    touchScreenDisplay.printf("Scale\n");
 }
 
 void calendarButton() {
@@ -190,10 +202,11 @@ void calendarButton() {
                                     CALENDAR_BUTTON_Y_ORIGIN,
                                     CALENDAR_BUTTON_WIDTH,
                                     CALENDAR_BUTTON_HEIGHT,
-                                    ILI9341_BLUE);
+                                    ILI9341_MAROON);
     }
-//    Show text, The cursor x is set with the len of the word / 2
-    touchScreenDisplay.setCursor(((CALENDAR_BUTTON_WIDTH / 2) + 4), (CALENDAR_BUTTON_Y_ORIGIN / 2));
+    //    Show text
+    touchScreenDisplay.setCursor(((CALENDAR_BUTTON_WIDTH / 2) - 45),
+                                 ((CALENDAR_BUTTON_Y_ORIGIN / 2) + LIGHT_BUTTON_HEIGHT) - 6);
     touchScreenDisplay.setTextColor(ILI9341_WHITE);
     touchScreenDisplay.setTextSize(2);
     touchScreenDisplay.printf("Calendar\n");
@@ -211,13 +224,17 @@ void fingerPrintButton() {
                                     FINGERPRINT_BUTTON_Y_ORIGIN,
                                     FINGERPRINT_BUTTON_WIDTH,
                                     FINGERPRINT_BUTTON_HEIGHT,
-                                    ILI9341_BLUE);
+                                    ILI9341_ORANGE);
     }
-    //    Show text, The cursor x is set with the len of the word / 2
-    touchScreenDisplay.setCursor(((FINGERPRINT_BUTTON_WIDTH / 2) + 2), ((FINGERPRINT_BUTTON_Y_ORIGIN / 2) - 2));
+    //    Show text
+    touchScreenDisplay.setCursor((((WATER_BUTTON_WIDTH / 2) - 25) + LIGHT_BUTTON_WIDTH),
+                                 (((WATER_BUTTON_HEIGHT / 2) - 12) + FINGERPRINT_BUTTON_Y_ORIGIN));
     touchScreenDisplay.setTextColor(ILI9341_WHITE);
     touchScreenDisplay.setTextSize(2);
-    touchScreenDisplay.printf("Finger\nPrint\n");
+    touchScreenDisplay.printf("Finger\n");
+    touchScreenDisplay.setCursor((((WATER_BUTTON_WIDTH / 2) - 25) + LIGHT_BUTTON_WIDTH),
+                                 (((WATER_BUTTON_HEIGHT / 2) + 6) + FINGERPRINT_BUTTON_Y_ORIGIN));
+    touchScreenDisplay.printf("Print\n");
 }
 
 void homeButtonSelect() {
@@ -229,41 +246,45 @@ void homeButtonSelect() {
     int y = touchScreenDisplay.height() - touchedPoint.x;
     int x = touchedPoint.y;
     if ((x > LIGHT_BUTTON_X_ORIGIN)
-        && (x < (LIGHT_BUTTON_X_ORIGIN + LIGHT_BUTTON_WIDTH))
-        && (y > LIGHT_BUTTON_Y_ORIGIN)
-        && (y < (LIGHT_BUTTON_Y_ORIGIN + LIGHT_BUTTON_HEIGHT))) {
+    && (x < (LIGHT_BUTTON_X_ORIGIN + LIGHT_BUTTON_WIDTH))
+    && (y > LIGHT_BUTTON_Y_ORIGIN)
+    && (y < (LIGHT_BUTTON_Y_ORIGIN + LIGHT_BUTTON_HEIGHT))) {
         Serial.printf("Light Button Pressed\n");
         lightButtonPressed = true;
         waterButtonPressed = false;
         calendarButtonPressed = false;
         fingerPrintButtonPressed = false;
+        newButtonPressed = true;
     } else if ((x > WATER_BUTTON_X_ORIGIN)
-               && (x < (WATER_BUTTON_X_ORIGIN + WATER_BUTTON_WIDTH))
-               && (y > WATER_BUTTON_Y_ORIGIN)
-               && (y < (WATER_BUTTON_Y_ORIGIN + WATER_BUTTON_HEIGHT))) {
+    && (x < (WATER_BUTTON_X_ORIGIN + WATER_BUTTON_WIDTH))
+    && (y > WATER_BUTTON_Y_ORIGIN)
+    && (y < (WATER_BUTTON_Y_ORIGIN + WATER_BUTTON_HEIGHT))) {
         Serial.printf("Water Button Pressed\n");
         lightButtonPressed = false;
         waterButtonPressed = true;
         calendarButtonPressed = false;
         fingerPrintButtonPressed = false;
+        newButtonPressed = true;
     } else if ((x > CALENDAR_BUTTON_X_ORIGIN)
-               && (x < CALENDAR_BUTTON_X_ORIGIN + CALENDAR_BUTTON_WIDTH)
-               && (y > CALENDAR_BUTTON_Y_ORIGIN)
-               && (y < (CALENDAR_BUTTON_Y_ORIGIN + CALENDAR_BUTTON_HEIGHT))) {
+    && (x < CALENDAR_BUTTON_X_ORIGIN + CALENDAR_BUTTON_WIDTH)
+    && (y > CALENDAR_BUTTON_Y_ORIGIN)
+    && (y < (CALENDAR_BUTTON_Y_ORIGIN + CALENDAR_BUTTON_HEIGHT))) {
         Serial.printf("Calendar Button Pressed\n");
         lightButtonPressed = false;
         waterButtonPressed = false;
         calendarButtonPressed = true;
         fingerPrintButtonPressed = false;
+        newButtonPressed = true;
     } else if ((x > FINGERPRINT_BUTTON_X_ORIGIN)
-               && (x < FINGERPRINT_BUTTON_X_ORIGIN + FINGERPRINT_BUTTON_WIDTH)
-               && (y > FINGERPRINT_BUTTON_Y_ORIGIN)
-               && (y < (FINGERPRINT_BUTTON_Y_ORIGIN + FINGERPRINT_BUTTON_HEIGHT))) {
+    && (x < FINGERPRINT_BUTTON_X_ORIGIN + FINGERPRINT_BUTTON_WIDTH)
+    && (y > FINGERPRINT_BUTTON_Y_ORIGIN)
+    && (y < (FINGERPRINT_BUTTON_Y_ORIGIN + FINGERPRINT_BUTTON_HEIGHT))) {
         Serial.printf("Finger Print Button Pressed\n");
         lightButtonPressed = false;
         waterButtonPressed = false;
         calendarButtonPressed = false;
         fingerPrintButtonPressed = true;
+        newButtonPressed = true;
     }
 }
 
@@ -299,8 +320,8 @@ void drawFrame() {
 unsigned long testRects(uint16_t color) {
     unsigned long start;
     int n, i, i2,
-            cx = touchScreenDisplay.width() / 2,
-            cy = touchScreenDisplay.height() / 2;
+    cx = touchScreenDisplay.width() / 2,
+    cy = touchScreenDisplay.height() / 2;
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
     n = min(touchScreenDisplay.width(), touchScreenDisplay.height());
     start = micros();
@@ -314,8 +335,8 @@ unsigned long testRects(uint16_t color) {
 unsigned long testFilledRects(uint16_t color1, uint16_t color2) {
     unsigned long start, t = 0;
     int n, i, i2,
-            cx = touchScreenDisplay.width() / 2 - 1,
-            cy = touchScreenDisplay.height() / 2 - 1;
+    cx = touchScreenDisplay.width() / 2 - 1,
+    cy = touchScreenDisplay.height() / 2 - 1;
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
     n = min(touchScreenDisplay.width(), touchScreenDisplay.height());
     for (i = n; i > 0; i -= 6) {
