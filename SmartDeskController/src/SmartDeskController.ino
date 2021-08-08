@@ -26,6 +26,7 @@ bool lightButtonPressed = false;
 bool waterButtonPressed = false;
 bool calendarButtonPressed = false;
 bool fingerPrintButtonPressed = false;
+bool newButtonPressed = false;
 
 // Screen size is 320 x 240
 const int SCREEN_WIDTH = 320;
@@ -86,6 +87,7 @@ void setUpTouchScreen() {
     capacitiveTouchScreen.begin(TOUCH_SENSITIVITY);
     // origin = left, top landscape (Reset button left upper)
     goToHomeMenu();
+    newButtonPressed = false;
 }
 
 void displaySetUp() {
@@ -121,7 +123,7 @@ void displaySetUp() {
     touchScreenDisplay.setTextColor(ILI9341_GREEN);
     touchScreenDisplay.setTextSize(4);
     touchScreenDisplay.printf("Welcome to\nSmart Desk\n1.0.1\n");
-    delay(50000);
+    // delay(5000);
 }
 
 void runTouchScreen() {
@@ -271,6 +273,8 @@ void goToHomeMenu() {
     waterButtonPressed = false;
     calendarButtonPressed = false;
     fingerPrintButtonPressed = false;
+    newButtonPressed = true;
+    runTouchScreen();
 }
 
 unsigned long testFillScreen() {
