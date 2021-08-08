@@ -18,28 +18,52 @@ const int SD_CS = D2;
 
 const int TOUCH_SENSITIVITY = 128;
 
-boolean RecordOn = false;
+bool lightButtonPressed = false;
+bool waterButtonPressed = false;
+
+// Screen size is 320 x 240
+const int SCREEN_WIDTH = 320;
+const int SCREEN_HEIGHT = 240;
 
 // BOX SIZES
-#define FRAME_X 10
-#define FRAME_Y 10
-#define FRAME_W 200
-#define FRAME_H 100
+const int FRAME_X_ORIGIN = 0;
+const int FRAME_Y_ORIGIN = 0;
+const int FRAME_WIDTH = SCREEN_WIDTH / 2;
+const int FRAME_HEIGHT = SCREEN_HEIGHT / 2;
 
-#define REDBUTTON_X FRAME_X
-#define REDBUTTON_Y FRAME_Y
-#define REDBUTTON_W (FRAME_W/2)
-#define REDBUTTON_H FRAME_H
 
-#define GREENBUTTON_X (REDBUTTON_X + REDBUTTON_W)
-#define GREENBUTTON_Y FRAME_Y
-#define GREENBUTTON_W (FRAME_W/2)
-#define GREENBUTTON_H FRAME_H
+// LIGHT BUTTON = top left
+
+const int LIGHT_BUTTON_X_ORIGIN = FRAME_X_ORIGIN;
+const int LIGHT_BUTTON_Y_ORIGIN = FRAME_Y_ORIGIN;
+const int LIGHT_BUTTON_WIDTH = FRAME_WIDTH;
+const int LIGHT_BUTTON_HEIGHT = FRAME_HEIGHT;
+
+// WATER BUTTON = top right
+
+const int WATER_BUTTON_X_ORIGIN = (LIGHT_BUTTON_X_ORIGIN + LIGHT_BUTTON_WIDTH);
+const int WATER_BUTTON_Y_ORIGIN = FRAME_Y_ORIGIN;
+const int WATER_BUTTON_WIDTH = FRAME_WIDTH;
+const int WATER_BUTTON_HEIGHT = FRAME_HEIGHT;
+
+// CALENDAR BUTTON = bottom left
+
+const int CALENDAR_BUTTON_X_ORIGIN = FRAME_Y_ORIGIN;
+const int CALENDAR_BUTTON_Y_ORIGIN = FRAME_Y_ORIGIN + LIGHT_BUTTON_HEIGHT;
+const int CALENDAR_BUTTON_WIDTH = FRAME_WIDTH;
+const int CALENDAR_BUTTON_HEIGHT = FRAME_HEIGHT;
+
+// FINGERPRINT BUTTON = bottom right
+
+const int FINGERPRINT_BUTTON_X_ORIGIN = FRAME_Y_ORIGIN + WATER_BUTTON_WIDTH;
+const int FINGERPRINT_BUTTON_Y_ORIGIN = FRAME_Y_ORIGIN + LIGHT_BUTTON_HEIGHT;
+const int FINGERPRINT_BUTTON_WIDTH = FRAME_WIDTH;
+const int FINGERPRINT_BUTTON_HEIGHT = FRAME_HEIGHT;
 
 //  Display Screen uses SPI --SEE PINS--
 Adafruit_ILI9341 touchScreenDisplay(touchScreenDisplayCS, touchScreenDisplayDataCommand);
 
-// Rouch Screen uses hardware I2C (SCL/SDA)
+// Touch Screen uses hardware I2C (SCL/SDA)
 Adafruit_FT6206 capacitiveTouchScreen = Adafruit_FT6206();
 
 void setUpTouchScreen() {
@@ -55,31 +79,31 @@ void runTouchScreen() {
     delay(100);
     Serial.printf("Checking if you touched anywhere\n");
     // if (capacitiveTouchScreen.touched()) {
-        // Retrieve a point  
-        TS_Point touchedPoint = capacitiveTouchScreen.getPoint();
-        // rotate coordinate system
-        // flip it around to match the screen.
-        touchedPoint.x = map(touchedPoint.x, 0, 240, 240, 0);
-        touchedPoint.y = map(touchedPoint.y, 0, 320, 320, 0);
-        int y = touchScreenDisplay.height() - touchedPoint.x;
-        int x = touchedPoint.y;
-        if (RecordOn) {
-            if ((x > REDBUTTON_X) && (x < (REDBUTTON_X + REDBUTTON_W))) {
-                if ((y > REDBUTTON_Y) && (y <= (REDBUTTON_Y + REDBUTTON_H))) {
-                    Serial.println("Red btn hit");
-                    redBtn();
-                }
-            }
-        } else {
-            if ((x > GREENBUTTON_X) && (x < (GREENBUTTON_X + GREENBUTTON_W))) {
-                if ((y > GREENBUTTON_Y) && (y <= (GREENBUTTON_Y + GREENBUTTON_H))) {
-                    Serial.println("Green btn hit");
-                    greenBtn();
-                }
+    // Retrieve a point
+    TS_Point touchedPoint = capacitiveTouchScreen.getPoint();
+    // rotate coordinate system
+    // flip it around to match the screen.
+    touchedPoint.x = map(touchedPoint.x, 0, 240, 240, 0);
+    touchedPoint.y = map(touchedPoint.y, 0, 320, 320, 0);
+    int y = touchScreenDisplay.height() - touchedPoint.x;
+    int x = touchedPoint.y;
+    if (RecordOn) {
+        if ((x > REDBUTTON_X) && (x < (REDBUTTON_X + REDBUTTON_W))) {
+            if ((y > REDBUTTON_Y) && (y <= (REDBUTTON_Y + REDBUTTON_H))) {
+                Serial.println("Red btn hit");
+                redBtn();
             }
         }
+    } else {
+        if ((x > GREENBUTTON_X) && (x < (GREENBUTTON_X + GREENBUTTON_W))) {
+            if ((y > GREENBUTTON_Y) && (y <= (GREENBUTTON_Y + GREENBUTTON_H))) {
+                Serial.println("Green btn hit");
+                greenBtn();
+            }
+        }
+    }
 
-        Serial.println(RecordOn);
+    Serial.println(RecordOn);
     // }
 }
 
@@ -127,28 +151,51 @@ void drawFrame() {
     touchScreenDisplay.drawRect(FRAME_X, FRAME_Y, FRAME_W, FRAME_H, ILI9341_BLACK);
 }
 
-void redBtn() {
-    touchScreenDisplay.fillRect(REDBUTTON_X, REDBUTTON_Y, REDBUTTON_W, REDBUTTON_H, ILI9341_RED);
-    touchScreenDisplay.fillRect(GREENBUTTON_X, GREENBUTTON_Y, GREENBUTTON_W, GREENBUTTON_H, ILI9341_BLUE);
-    drawFrame();
-    touchScreenDisplay.setCursor(GREENBUTTON_X + 6, GREENBUTTON_Y + (GREENBUTTON_H / 2));
+void lightButton() {
+    touchScreenDisplay.fillRect(LIGHT_BUTTON_X_ORIGIN,
+                                LIGHT_BUTTON_Y_ORIGIN,
+                                LIGHT_BUTTON_HEIGHT,
+                                LIGHT_BUTTON_HEIGHT,
+                                ILI9341_RED);
+    if (lightButtonPressed) {
+        touchScreenDisplay.fillRect(LIGHT_BUTTON_X_ORIGIN,
+                                    LIGHT_BUTTON_Y_ORIGIN,
+                                    LIGHT_BUTTON_WIDTH,
+                                    LIGHT_BUTTON_HEIGHT,
+                                    ILI9341_GREEN);
+    }
+//    Show text, The cursor x is set with the len of the word / 2
+    touchScreenDisplay.setCursor(((LIGHT_BUTTON_WIDTH / 2) - 3), (LIGHT_BUTTON_HEIGHT / 2));
     touchScreenDisplay.setTextColor(ILI9341_WHITE);
     touchScreenDisplay.setTextSize(2);
-    touchScreenDisplay.println("ON");
-    RecordOn = false;
+    touchScreenDisplay.printf("Lights\n");
+    lightButtonPressed = false;
 }
 
-void greenBtn() {
-    touchScreenDisplay.fillRect(GREENBUTTON_X, GREENBUTTON_Y, GREENBUTTON_W, GREENBUTTON_H, ILI9341_GREEN);
-    touchScreenDisplay.fillRect(REDBUTTON_X, REDBUTTON_Y, REDBUTTON_W, REDBUTTON_H, ILI9341_BLUE);
-    drawFrame();
-    touchScreenDisplay.setCursor(REDBUTTON_X + 6, REDBUTTON_Y + (REDBUTTON_H / 2));
+void waterButton() {
+    touchScreenDisplay.fillRect(WATER_BUTTON_X_ORIGIN,
+                                WATER_BUTTON_Y_ORIGIN,
+                                WATER_BUTTON_WIDTH,
+                                WATER_BUTTON_HEIGHT,
+                                ILI9341_BLUE);
+    if (waterButtonPressed) {
+        touchScreenDisplay.fillRect(WATER_BUTTON_X_ORIGIN,
+                                    WATER_BUTTON_Y_ORIGIN,
+                                    WATER_BUTTON_WIDTH,
+                                    WATER_BUTTON_HEIGHT,
+                                    ILI9341_GREEN);
+    }
+//    Show text, The cursor x is set with the len of the word / 2
+    touchScreenDisplay.setCursor(((WATER_BUTTON_WIDTH / 2) + 2)), ((WATER_BUTTON_Y_ORIGIN / 2) - 2));
     touchScreenDisplay.setTextColor(ILI9341_WHITE);
     touchScreenDisplay.setTextSize(2);
-    touchScreenDisplay.println("OFF");
-    RecordOn = true;
+    touchScreenDisplay.printf("Water\nScale\n");
+    waterButtonPressed = true;
 }
 
+void calendarButton() {
+
+}
 
 /*
 unsigned long testText() {
