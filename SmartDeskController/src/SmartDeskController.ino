@@ -131,7 +131,7 @@ void displaySetUp() {
     // delay(5000);
 }
 
-void runTouchScreen() {
+void homeTouchScreen() {
     Serial.printf("Checking if you touched anywhere\n");
     homeButtonSelect();
     if (newButtonPressed) {
