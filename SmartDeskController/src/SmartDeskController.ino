@@ -85,7 +85,6 @@ void setUpTouchScreen() {
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
     capacitiveTouchScreen.begin(TOUCH_SENSITIVITY);
     // origin = left, top landscape (Reset button left upper)
-    touchScreenDisplay.setRotation(1);
     goToHomeMenu();
 }
 
@@ -112,16 +111,17 @@ void displaySetUp() {
 
     Serial.println("Done!");
 //    End diagnostics
-
+    touchScreenDisplay.setRotation(1);      
     testFillScreen();
     testRects(ILI9341_PINK);
 //    Welcome message
 
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
-    touchScreenDisplay.setCursor(((SCREEN_WIDTH / 2) - 5), ((SCREEN_HEIGHT / 2) - 3));
+    touchScreenDisplay.setCursor(0, 80);
     touchScreenDisplay.setTextColor(ILI9341_GREEN);
     touchScreenDisplay.setTextSize(4);
     touchScreenDisplay.printf("Welcome to\nSmart Desk\n1.0.1\n");
+    delay(50000);
 }
 
 void runTouchScreen() {

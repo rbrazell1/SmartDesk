@@ -3,7 +3,7 @@
 /******************************************************/
 
 #include "Particle.h"
-#line 1 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDeskScreenDebug/src/SmartDeskScreenDebug.ino"
+#line 1 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDeskController/src/SmartDeskController.ino"
 /*
 *   Project: SmartDesk 0.1.1
 *   Description: The code needed to run the protoType SmartDesk
@@ -33,7 +33,7 @@ unsigned long testFillScreen();
 void drawFrame();
 unsigned long testRects(uint16_t color);
 unsigned long testFilledRects(uint16_t color1, uint16_t color2);
-#line 15 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDeskScreenDebug/src/SmartDeskScreenDebug.ino"
+#line 15 "c:/Users/Russell/Desktop/IoT/projects/SmartDesk/SmartDeskController/src/SmartDeskController.ino"
 SYSTEM_MODE(MANUAL);
 
 //  PINS
@@ -107,7 +107,6 @@ void setUpTouchScreen() {
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
     capacitiveTouchScreen.begin(TOUCH_SENSITIVITY);
     // origin = left, top landscape (Reset button left upper)
-    touchScreenDisplay.setRotation(1);
     goToHomeMenu();
 }
 
@@ -134,16 +133,17 @@ void displaySetUp() {
 
     Serial.println("Done!");
 //    End diagnostics
-
+    touchScreenDisplay.setRotation(1);      
     testFillScreen();
     testRects(ILI9341_PINK);
 //    Welcome message
 
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
-    touchScreenDisplay.setCursor(((SCREEN_WIDTH / 2) - 5), ((SCREEN_HEIGHT / 2) - 3));
+    touchScreenDisplay.setCursor(0, 80);
     touchScreenDisplay.setTextColor(ILI9341_GREEN);
     touchScreenDisplay.setTextSize(4);
     touchScreenDisplay.printf("Welcome to\nSmart Desk\n1.0.1\n");
+    delay(50000);
 }
 
 void runTouchScreen() {
