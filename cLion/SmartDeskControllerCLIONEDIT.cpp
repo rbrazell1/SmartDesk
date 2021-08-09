@@ -11,6 +11,12 @@
 #include <Adafruit_ILI9341.h>
 #include <Wire.h>
 #include <Adafruit_FT6206_Library.h>
+#include "credentials.h"
+#include "IOTTimer.h"
+#include <HX711.h>
+#include <Adafruit_MQTT.h>
+#include "Adafruit_MQTT/Adafruit_MQTT.h"
+#include "Adafruit_MQTT/Adafruit_MQTT_SPARK.h"
 
 SYSTEM_MODE(MANUAL);
 
@@ -18,9 +24,15 @@ SYSTEM_MODE(MANUAL);
 const int touchScreenDisplayDataCommand = D5;
 const int touchScreenDisplayCS = D4;
 const int SD_CS = D2;
+const int DATA_PIN = A0;
+const int SCK_PIN = A1;
+
 
 const int TOUCH_SENSITIVITY = 128;
 const int TRANS_DELAY = 250;
+
+unsigned int _timerStart;
+unsigned int _timerTarget;
 
 bool homeButtonPressed = true;
 bool lightButtonPressed = false;
@@ -147,12 +159,43 @@ const int WATER_SET_BUTTON_Y_ORIGIN = SCREEN_HEIGHT / 2;
 const int WATER_SET_BUTTON_WIDTH = SCREEN_WIDTH;
 const int WATER_SET_BUTTON_HEIGHT = 60;
 
+// LOAD CELL
+
+const int CAL_FACTOR = 1123; // This is calibrated to grams on the H2O scale
+const int SAMPLE = 10;
+const int WAIT_TIME = 3000;
+
+float tareOffset;
+float weight;
+float rawData;
+float scaleCalibration;
+
+const float WATER_GRAMS = 29.5735295625f;
+
+// MQTT
+unsigned long last;
+unsigned long lastTime;
+
+String onlyDate;
+String onlyTime;
 
 //  Display Screen uses SPI --SEE PINS--
 Adafruit_ILI9341 touchScreenDisplay(touchScreenDisplayCS, touchScreenDisplayDataCommand);
 
 // Touch Screen uses hardware I2C (SCL/SDA)
 Adafruit_FT6206 capacitiveTouchScreen = Adafruit_FT6206();
+
+HX711 H2Oscale(DATA_PIN, SCK_PIN);
+
+IOTTimer connectTimer;
+
+TCPClient TheClient;
+
+Adafruit_MQTT_SPARK mqtt(&TheClient, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_KEY);
+
+// Publish
+Adafruit_MQTT_Publish mqttPubWaterWeight = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME
+"/feeds/waterweight");
 
 void setup() {
     setUpTouchScreen();
@@ -855,18 +898,56 @@ void waterVolume() {
             (SCREEN_WIDTH - CAL_BUTTON_WIDTH),
             CAL_BUTTON_HEIGHT,
             ILI9341_CYAN);
-    touchScreenDisplay.setCursor(CAL_BUTTON_WIDTH + 12 , CAL_BUTTON_Y_ORIGIN + 12);
+    touchScreenDisplay.setCursor(CAL_BUTTON_WIDTH + 12, CAL_BUTTON_Y_ORIGIN + 12);
     touchScreenDisplay.setTextColor(ILI9341_BLACK);
     touchScreenDisplay.setTextSize(2);
     touchScreenDisplay.printf("Fluid OZ's Left");
     touchScreenDisplay.setCursor((SCREEN_WIDTH / 2), (SCREEN_HEIGHT / 2) - 16);
     touchScreenDisplay.setTextColor(ILI9341_BLACK);
     touchScreenDisplay.setTextSize(8);
-    touchScreenDisplay.printf("%i", getWaterOZ());
+    touchScreenDisplay.printf("%0.1f", getWaterOZ());
 }
 
-int getWaterOZ() {
-    return 28;
+float getWaterOZ(float _scaleWeight) {
+    float _waterVol;
+    _waterVol = _scaleWeight / WATER_GRAMS;
+    return _waterVol;
+}
+
+void publishReadings() {
+    MQTT_connect();
+    if ((millis() - last) > 120000) {
+        Serial.printf("Pinging MQTT \n");
+        if (!mqtt.ping()) {
+            Serial.printf("Disconnecting \n");
+            mqtt.disconnect();
+        }
+        last = millis();
+    }
+    if ((millis() - lastTime > 30000)) {
+
+        if (mqtt.Update()) {
+            mqttPubWaterWeight.publish(getOZWater(weight));
+        }
+        lastTime = millis();
+    }
+}
+
+void MQTT_connect() {
+    int8_t ret;
+    // Stop if already connected.
+    if (mqtt.connected()) {
+        return;
+    }
+    Serial.print("Connecting to MQTT... ");
+    while ((ret = mqtt.connect()) != 0) { // connect will return 0 for connected
+        Serial.printf("%s\n", (char *) mqtt.connectErrorString(ret));
+        Serial.printf("Retrying MQTT connection in 5 seconds..\n");
+        mqtt.disconnect();
+        connectTimer.startTimer(5000);
+        while (!connectTimer.isTimerReady());
+    }
+    Serial.printf("MQTT Connected!\n");
 }
 
 unsigned long testFillScreen() {
