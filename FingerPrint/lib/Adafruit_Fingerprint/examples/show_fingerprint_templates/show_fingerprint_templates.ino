@@ -38,7 +38,7 @@ void setup()
   Serial.println("Fingerprint template extractor");
 
   // set the data rate for the sensor serial port
-  finger.begin(57600);
+  finger.begin(115200);
 
   if (finger.verifyPassword()) {
     Serial.println("Found fingerprint sensor!");

@@ -8,7 +8,7 @@
 
 void setup() {
   // put your setup code here, to run once:
-  Serial1.begin(57600);
+  Serial1.begin(115200);
   Serial.begin(57600);
 }
 
