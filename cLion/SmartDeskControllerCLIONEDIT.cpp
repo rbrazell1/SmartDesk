@@ -230,6 +230,9 @@ void menuSelect() {
     if (waterButtonPressed) {
         waterMenu();
     }
+    if (waterScaleCalButtonPressed) {
+        setCalMenu();
+    }
 }
 
 void setUpTouchScreen() {
@@ -460,9 +463,9 @@ void homeButtonSelect() {
     int y = touchScreenDisplay.height() - touchedPoint.x;
     int x = touchedPoint.y;
     if ((x > LIGHT_BUTTON_X_ORIGIN)
-    && (x < (LIGHT_BUTTON_X_ORIGIN + LIGHT_BUTTON_WIDTH))
-    && (y > LIGHT_BUTTON_Y_ORIGIN)
-    && (y < (LIGHT_BUTTON_Y_ORIGIN + LIGHT_BUTTON_HEIGHT))) {
+        && (x < (LIGHT_BUTTON_X_ORIGIN + LIGHT_BUTTON_WIDTH))
+        && (y > LIGHT_BUTTON_Y_ORIGIN)
+        && (y < (LIGHT_BUTTON_Y_ORIGIN + LIGHT_BUTTON_HEIGHT))) {
         Serial.printf("Light Button Pressed\n");
         lightButtonPressed = true;
         lightButtonShowing = false;
@@ -471,9 +474,9 @@ void homeButtonSelect() {
         fingerPrintButtonPressed = false;
         newButtonPressed = true;
     } else if ((x > WATER_BUTTON_X_ORIGIN)
-    && (x < (WATER_BUTTON_X_ORIGIN + WATER_BUTTON_WIDTH))
-    && (y > WATER_BUTTON_Y_ORIGIN)
-    && (y < (WATER_BUTTON_Y_ORIGIN + WATER_BUTTON_HEIGHT))) {
+               && (x < (WATER_BUTTON_X_ORIGIN + WATER_BUTTON_WIDTH))
+               && (y > WATER_BUTTON_Y_ORIGIN)
+               && (y < (WATER_BUTTON_Y_ORIGIN + WATER_BUTTON_HEIGHT))) {
         Serial.printf("Water Button Pressed\n");
         lightButtonPressed = false;
         waterButtonPressed = true;
@@ -482,9 +485,9 @@ void homeButtonSelect() {
         fingerPrintButtonPressed = false;
         newButtonPressed = true;
     } else if ((x > CALENDAR_BUTTON_X_ORIGIN)
-    && (x < CALENDAR_BUTTON_X_ORIGIN + CALENDAR_BUTTON_WIDTH)
-    && (y > CALENDAR_BUTTON_Y_ORIGIN)
-    && (y < (CALENDAR_BUTTON_Y_ORIGIN + CALENDAR_BUTTON_HEIGHT))) {
+               && (x < CALENDAR_BUTTON_X_ORIGIN + CALENDAR_BUTTON_WIDTH)
+               && (y > CALENDAR_BUTTON_Y_ORIGIN)
+               && (y < (CALENDAR_BUTTON_Y_ORIGIN + CALENDAR_BUTTON_HEIGHT))) {
         Serial.printf("Calendar Button Pressed\n");
         lightButtonPressed = false;
         waterButtonPressed = false;
@@ -493,9 +496,9 @@ void homeButtonSelect() {
         fingerPrintButtonPressed = false;
         newButtonPressed = true;
     } else if ((x > FINGERPRINT_BUTTON_X_ORIGIN)
-    && (x < FINGERPRINT_BUTTON_X_ORIGIN + FINGERPRINT_BUTTON_WIDTH)
-    && (y > FINGERPRINT_BUTTON_Y_ORIGIN)
-    && (y < (FINGERPRINT_BUTTON_Y_ORIGIN + FINGERPRINT_BUTTON_HEIGHT))) {
+               && (x < FINGERPRINT_BUTTON_X_ORIGIN + FINGERPRINT_BUTTON_WIDTH)
+               && (y > FINGERPRINT_BUTTON_Y_ORIGIN)
+               && (y < (FINGERPRINT_BUTTON_Y_ORIGIN + FINGERPRINT_BUTTON_HEIGHT))) {
         Serial.printf("Finger Print Button Pressed\n");
         lightButtonPressed = false;
         waterButtonPressed = false;
@@ -517,6 +520,7 @@ void goToHomeMenu() {
     fingerPrintButtonPressed = false;
     fingerPrintButtonShowing = false;
     newButtonPressed = true;
+    waterSetCalButtonPressed = false;
     homeMenu();
 }
 
@@ -534,7 +538,7 @@ void homeButton() {
         touchScreenDisplay.printf("Home\n");
         delay(TRANS_DELAY);
         goToHomeMenu();
-    } else if (!calDone) {
+    } else if (calDone) {
         touchScreenDisplay.fillRect(HOME_BUTTON_X_ORIGIN,
                                     HOME_BUTTON_Y_ORIGIN,
                                     HOME_BUTTON_WIDTH,
@@ -600,9 +604,9 @@ void lightButtonSelect() {
     int y = touchScreenDisplay.height() - touchedPoint.x;
     int x = touchedPoint.y;
     if ((x > ON_BUTTON_X_ORIGIN)
-    && (x < ON_BUTTON_X_ORIGIN + ON_BUTTON_WIDTH)
-    && (y > ON_BUTTON_Y_ORIGIN)
-    && (y < ON_BUTTON_Y_ORIGIN + ON_BUTTON_HEIGHT)) {
+        && (x < ON_BUTTON_X_ORIGIN + ON_BUTTON_WIDTH)
+        && (y > ON_BUTTON_Y_ORIGIN)
+        && (y < ON_BUTTON_Y_ORIGIN + ON_BUTTON_HEIGHT)) {
         onButtonPressed = true;
         onButtonShowing = false;
         offButtonPressed = false;
@@ -612,9 +616,9 @@ void lightButtonSelect() {
         homeButtonPressed = false;
         newButtonPressed = true;
     } else if ((x > OFF_BUTTON_X_ORIGIN)
-    && (x < OFF_BUTTON_X_ORIGIN + ON_BUTTON_WIDTH)
-    && (y > OFF_BUTTON_Y_ORIGIN)
-    && (y < OFF_BUTTON_Y_ORIGIN + OFF_BUTTON_HEIGHT)) {
+               && (x < OFF_BUTTON_X_ORIGIN + ON_BUTTON_WIDTH)
+               && (y > OFF_BUTTON_Y_ORIGIN)
+               && (y < OFF_BUTTON_Y_ORIGIN + OFF_BUTTON_HEIGHT)) {
         onButtonPressed = false;
         offButtonPressed = true;
         offButtonShowing = false;
@@ -624,9 +628,9 @@ void lightButtonSelect() {
         homeButtonPressed = false;
         newButtonPressed = true;
     } else if ((x > COLOR_BUTTON_X_ORIGIN)
-    && (x < COLOR_BUTTON_X_ORIGIN + COLOR_BUTTON_WIDTH)
-    && (y > COLOR_BUTTON_Y_ORIGIN)
-    && (y < COLOR_BUTTON_Y_ORIGIN + COLOR_BUTTON_HEIGHT)) {
+               && (x < COLOR_BUTTON_X_ORIGIN + COLOR_BUTTON_WIDTH)
+               && (y > COLOR_BUTTON_Y_ORIGIN)
+               && (y < COLOR_BUTTON_Y_ORIGIN + COLOR_BUTTON_HEIGHT)) {
         onButtonPressed = false;
         offButtonPressed = false;
         colorButtonPressed = true;
@@ -636,9 +640,9 @@ void lightButtonSelect() {
         homeButtonPressed = false;
         newButtonPressed = true;
     } else if ((x > BRIGHT_PLUS_X_ORIGIN)
-    && (x < BRIGHT_PLUS_X_ORIGIN + BRIGHT_PLUS_WIDTH)
-    && (y > BRIGHT_PLUS_Y_ORIGIN)
-    && (y < BRIGHT_PLUS_Y_ORIGIN + BRIGHT_PLUS_HEIGHT)) {
+               && (x < BRIGHT_PLUS_X_ORIGIN + BRIGHT_PLUS_WIDTH)
+               && (y > BRIGHT_PLUS_Y_ORIGIN)
+               && (y < BRIGHT_PLUS_Y_ORIGIN + BRIGHT_PLUS_HEIGHT)) {
         onButtonPressed = false;
         offButtonPressed = false;
         colorButtonPressed = false;
@@ -648,9 +652,9 @@ void lightButtonSelect() {
         homeButtonPressed = false;
         newButtonPressed = true;
     } else if ((x > BRIGHT_LESS_X_ORIGIN)
-    && (x < BRIGHT_LESS_X_ORIGIN + BRIGHT_LESS_WIDTH)
-    && (y > BRIGHT_LESS_Y_ORIGIN)
-    && (y < BRIGHT_LESS_Y_ORIGIN + BRIGHT_LESS_HEIGHT)) {
+               && (x < BRIGHT_LESS_X_ORIGIN + BRIGHT_LESS_WIDTH)
+               && (y > BRIGHT_LESS_Y_ORIGIN)
+               && (y < BRIGHT_LESS_Y_ORIGIN + BRIGHT_LESS_HEIGHT)) {
         onButtonPressed = false;
         offButtonPressed = false;
         colorButtonPressed = false;
@@ -660,9 +664,9 @@ void lightButtonSelect() {
         homeButtonPressed = false;
         newButtonPressed = true;
     } else if ((x > HOME_BUTTON_X_ORIGIN)
-    && (x < HOME_BUTTON_X_ORIGIN + HOME_BUTTON_WIDTH)
-    && (y > HOME_BUTTON_Y_ORIGIN)
-    && (y < HOME_BUTTON_Y_ORIGIN + HOME_BUTTON_HEIGHT)) {
+               && (x < HOME_BUTTON_X_ORIGIN + HOME_BUTTON_WIDTH)
+               && (y > HOME_BUTTON_Y_ORIGIN)
+               && (y < HOME_BUTTON_Y_ORIGIN + HOME_BUTTON_HEIGHT)) {
         onButtonPressed = false;
         offButtonPressed = false;
         colorButtonPressed = false;
@@ -859,13 +863,14 @@ void waterMenu() {
             waterVolumeShowing = true;
             waterVolume();
         }
+        newButtonPressed = false;
     } else {
         weight = (-1) * H2Oscale.get_units(SAMPLE);
         // rawData = H2Oscale.get_value(SAMPLE);
         tareOffset = H2Oscale.get_offset();
         scaleCalibration = H2Oscale.get_scale();
         Serial.printf("Weight: %0.3f\n OZ's: %0.2f\n", weight, getWaterOZ(weight));
-        if (publishTimer.isTimerReady()){
+        if (publishTimer.isTimerReady()) {
             publishReadings();
             publishTimer.startTimer(30000);
         }
@@ -881,21 +886,23 @@ void waterButtonSelect() {
     int y = touchScreenDisplay.height() - touchedPoint.x;
     int x = touchedPoint.y;
     if ((x > CAL_BUTTON_X_ORIGIN)
-    && (x < CAL_BUTTON_WIDTH)
-    && (y > CAL_BUTTON_Y_ORIGIN)
-    && (y < CAL_BUTTON_HEIGHT)) {
+        && (x < CAL_BUTTON_WIDTH)
+        && (y > CAL_BUTTON_Y_ORIGIN)
+        && (y < CAL_BUTTON_HEIGHT)) {
         Serial.printf("Cal Button Pressed\n");
         waterScaleCalButtonPressed = true;
         waterScaleCalButtonShowing = false;
         waterSetCalButtonShowing = false;
+        waterButtonPressed = false;
         waterVolumeShowing = true;
         homeButtonPressed = false;
         homeButtonShowing = false;
         newButtonPressed = true;
+        calDone = false;
     } else if ((x > HOME_BUTTON_X_ORIGIN)
-    && (x < HOME_BUTTON_WIDTH)
-    && (y > HOME_BUTTON_Y_ORIGIN)
-    && (y < (HOME_BUTTON_Y_ORIGIN + HOME_BUTTON_HEIGHT))) {
+               && (x < HOME_BUTTON_WIDTH)
+               && (y > HOME_BUTTON_Y_ORIGIN)
+               && (y < (HOME_BUTTON_Y_ORIGIN + HOME_BUTTON_HEIGHT))) {
         Serial.printf("Home Button Pressed\n");
         waterScaleCalButtonPressed = false;
         homeButtonShowing = false;
@@ -920,7 +927,7 @@ void waterCalButton() {
         touchScreenDisplay.printf("Scale\n");
         delay(TRANS_DELAY);
         waterButtonPressed = false;
-        waterSetCalButtonShowing = true;
+        waterSetCalButtonShowing = false;
         waterVolumeShowing = true;
         homeButtonShowing = false;
         homeButtonPressed = false;
@@ -992,7 +999,6 @@ void showCalInstruction() {
 
 void setCalMenu() {
     Serial.printf("Water Set Cal waiting for touch\n");
-    delay(500);
     setCalButtonSelect();
     if (newButtonPressed) {
         if (!waterSetCalButtonShowing) {
@@ -1003,6 +1009,7 @@ void setCalMenu() {
             homeButtonShowing = true;
             homeButton();
         }
+        newButtonPressed = false;
     }
 }
 
@@ -1015,24 +1022,27 @@ void setCalButtonSelect() {
     int y = touchScreenDisplay.height() - touchedPoint.x;
     int x = touchedPoint.y;
     if ((x > WATER_SET_BUTTON_X_ORIGIN)
-    && (x < WATER_SET_BUTTON_WIDTH)
-    && (y > WATER_SET_BUTTON_Y_ORIGIN)
-    && (y < WATER_SET_BUTTON_Y_ORIGIN + WATER_SET_BUTTON_HEIGHT)) {
+        && (x < WATER_SET_BUTTON_WIDTH)
+        && (y > WATER_SET_BUTTON_Y_ORIGIN)
+        && (y < WATER_SET_BUTTON_Y_ORIGIN + WATER_SET_BUTTON_HEIGHT)) {
         Serial.printf("Set Button Pressed\n");
         waterSetCalButtonPressed = true;
         waterSetCalButtonShowing = false;
         waterVolumeShowing = true;
         homeButtonPressed = false;
+        homeButtonShowing = false;
         calDone = false;
         newButtonPressed = true;
     } else if ((x > HOME_BUTTON_X_ORIGIN)
-    && (x < HOME_BUTTON_WIDTH)
-    && (y > HOME_BUTTON_Y_ORIGIN)
-    && (y < (HOME_BUTTON_Y_ORIGIN + HOME_BUTTON_HEIGHT))) {
+               && (x < HOME_BUTTON_WIDTH)
+               && (y > HOME_BUTTON_Y_ORIGIN)
+               && (y < (HOME_BUTTON_Y_ORIGIN + HOME_BUTTON_HEIGHT))) {
         Serial.printf("Home Button Pressed\n");
         waterSetCalButtonPressed = false;
         waterSetCalButtonShowing = true;
         homeButtonPressed = true;
+        homeButtonShowing = false;
+        calDone = false;
         newButtonPressed = true;
     }
 }
@@ -1123,8 +1133,8 @@ void drawFrame() {
 unsigned long testRects(uint16_t color) {
     unsigned long start;
     int n, i, i2,
-    cx = touchScreenDisplay.width() / 2,
-    cy = touchScreenDisplay.height() / 2;
+            cx = touchScreenDisplay.width() / 2,
+            cy = touchScreenDisplay.height() / 2;
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
     n = min(touchScreenDisplay.width(), touchScreenDisplay.height());
     start = micros();
@@ -1138,8 +1148,8 @@ unsigned long testRects(uint16_t color) {
 unsigned long testFilledRects(uint16_t color1, uint16_t color2) {
     unsigned long start, t = 0;
     int n, i, i2,
-    cx = touchScreenDisplay.width() / 2 - 1,
-    cy = touchScreenDisplay.height() / 2 - 1;
+            cx = touchScreenDisplay.width() / 2 - 1,
+            cy = touchScreenDisplay.height() / 2 - 1;
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
     n = min(touchScreenDisplay.width(), touchScreenDisplay.height());
     for (i = n; i > 0; i -= 6) {
