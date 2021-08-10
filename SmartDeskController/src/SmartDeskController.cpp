@@ -51,6 +51,10 @@ void waterCalButton();
 void waterVolume();
 float getWaterOZ(float _scaleWeight);
 void setWaterScaleCal();
+void showCalInstruction();
+void setCalMenu();
+void setCalButtonSelect();
+void waterResetCalButton();
 void publishReadings();
 void MQTT_connect();
 unsigned long testFillScreen();
@@ -87,6 +91,7 @@ bool brightPlusButtonPressed = false;
 bool brightLessButtonPressed = false;
 bool waterScaleCalButtonPressed = false;
 bool waterScaleSetButtonPressed = false;
+bool waterSetCalButtonPressed = false;
 
 bool homeButtonShowing = false;
 bool lightButtonShowing = false;
@@ -102,6 +107,9 @@ bool brightLessButtonShowing = false;
 bool waterScaleCalButtonShowing = false;
 bool waterScaleSetButtonShowing = false;
 bool waterVolumeShowing = false;
+bool waterSetCalButtonShowing = false;
+
+bool calDone = false;
 
 // Screen size is 320 x 240
 const int SCREEN_WIDTH = 320;
@@ -199,6 +207,13 @@ const int WATER_SET_BUTTON_Y_ORIGIN = SCREEN_HEIGHT / 2;
 const int WATER_SET_BUTTON_WIDTH = SCREEN_WIDTH;
 const int WATER_SET_BUTTON_HEIGHT = 60;
 
+// WATER SCALE CALIBRATION INSTRUCTIONS = top
+
+const int INSTRUCTIONS_X_ORIGIN = FRAME_X_ORIGIN;
+const int INSTRUCTIONS_Y_ORIGIN = FRAME_Y_ORIGIN;
+const int INSTRUCTIONS_WIDTH = SCREEN_WIDTH;
+const int INSTRUCTIONS_HEIGHT = (SCREEN_HEIGHT - WATER_SET_BUTTON_HEIGHT - HOME_BUTTON_HEIGHT);
+
 // LOAD CELL
 
 const int CAL_FACTOR = 1123; // This is calibrated to grams on the H2O scale
@@ -212,7 +227,6 @@ static float weight;
 float tareOffset;
 float rawData;
 float scaleCalibration;
-
 
 // MQTT
 unsigned long last;
@@ -230,6 +244,7 @@ Adafruit_FT6206 capacitiveTouchScreen = Adafruit_FT6206();
 HX711 H2Oscale(DATA_PIN, SCK_PIN);
 
 IOTTimer connectTimer;
+IOTTimer publishTimer;
 
 TCPClient TheClient;
 
@@ -240,8 +255,9 @@ Adafruit_MQTT_Publish mqttPubWaterWeight = Adafruit_MQTT_Publish(&mqtt, AIO_USER
 "/feeds/waterweight");
 
 void setup() {
-    setUpTouchScreen();
+    displaySetUp();
     scaleSetUp();
+    setUpTouchScreen();
 }
 
 void loop() {
@@ -261,7 +277,6 @@ void menuSelect() {
 }
 
 void setUpTouchScreen() {
-    displaySetUp();
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
     capacitiveTouchScreen.begin(TOUCH_SENSITIVITY);
     // origin = left, top landscape (Reset button left upper)
@@ -302,12 +317,14 @@ void displaySetUp() {
     touchScreenDisplay.setTextColor(ILI9341_GREEN);
     touchScreenDisplay.setTextSize(4);
     touchScreenDisplay.printf("Welcome to\nSmart Desk\n1.0.1\n");
+
     // delay(5000);
 }
 
 void scaleSetUp() {
     WiFi.connect();
     setWaterScaleCal();
+    MQTT_connect();
 }
 
 void homeMenu() {
@@ -394,6 +411,7 @@ void waterButton() {
         fingerPrintButtonPressed = false;
         calendarButtonPressed = false;
         waterScaleCalButtonShowing = false;
+        waterVolumeShowing = false;
         waterMenu();
     } else {
         touchScreenDisplay.fillRect(WATER_BUTTON_X_ORIGIN,
@@ -560,6 +578,17 @@ void homeButton() {
         touchScreenDisplay.printf("Home\n");
         delay(TRANS_DELAY);
         goToHomeMenu();
+    } else if (!calDone) {
+        touchScreenDisplay.fillRect(HOME_BUTTON_X_ORIGIN,
+                                    HOME_BUTTON_Y_ORIGIN,
+                                    HOME_BUTTON_WIDTH,
+                                    HOME_BUTTON_HEIGHT,
+                                    ILI9341_GREEN);
+        touchScreenDisplay.setCursor((HOME_BUTTON_WIDTH / 2) - 20,
+                                     ((HOME_BUTTON_HEIGHT / 2) - 4) + COLOR_BUTTON_HEIGHT);
+        touchScreenDisplay.setTextColor(ILI9341_WHITE);
+        touchScreenDisplay.setTextSize(2);
+        touchScreenDisplay.printf("Home\n");
     } else {
         touchScreenDisplay.fillRect(HOME_BUTTON_X_ORIGIN,
                                     HOME_BUTTON_Y_ORIGIN,
@@ -874,13 +903,17 @@ void waterMenu() {
             waterVolumeShowing = true;
             waterVolume();
         }
+    } else {
+        weight = (-1) * H2Oscale.get_units(SAMPLE);
+        // rawData = H2Oscale.get_value(SAMPLE);
+        tareOffset = H2Oscale.get_offset();
+        scaleCalibration = H2Oscale.get_scale();
+        Serial.printf("Weight: %0.3f\n OZ's: %0.2f\n", weight, getWaterOZ(weight));
+        if (publishTimer.isTimerReady()){
+            publishReadings();
+            publishTimer.startTimer(30000);
+        }
     }
-    weight = (-1) * H2Oscale.get_units(SAMPLE);
-    // rawData = H2Oscale.get_value(SAMPLE); 
-    tareOffset = H2Oscale.get_offset();
-    scaleCalibration = H2Oscale.get_scale();
-    Serial.printf("Weight: %0.3f\n OZ's: %0.2f\n", weight, getWaterOZ(weight));
-    publishReadings();
 }
 
 void waterButtonSelect() {
@@ -898,7 +931,10 @@ void waterButtonSelect() {
         Serial.printf("Cal Button Pressed\n");
         waterScaleCalButtonPressed = true;
         waterScaleCalButtonShowing = false;
+        waterSetCalButtonShowing = false;
+        waterVolumeShowing = true;
         homeButtonPressed = false;
+        homeButtonShowing = false;
         newButtonPressed = true;
     } else if ((x > HOME_BUTTON_X_ORIGIN)
                && (x < HOME_BUTTON_WIDTH)
@@ -927,13 +963,19 @@ void waterCalButton() {
         touchScreenDisplay.setCursor(0, ((WATER_BUTTON_HEIGHT / 2) + 16));
         touchScreenDisplay.printf("Scale\n");
         delay(TRANS_DELAY);
-
+        waterButtonPressed = false;
+        waterSetCalButtonShowing = true;
+        waterVolumeShowing = true;
+        homeButtonShowing = false;
+        homeButtonPressed = false;
+        showCalInstruction();
+        setCalMenu();
     } else {
         touchScreenDisplay.fillRect(CAL_BUTTON_X_ORIGIN,
                                     CAL_BUTTON_Y_ORIGIN,
                                     CAL_BUTTON_WIDTH,
                                     CAL_BUTTON_HEIGHT,
-                                    ILI9341_DARKGREY);
+                                    ILI9341_DARKGREEN);
         //    Show text
         touchScreenDisplay.setCursor(0, ((WATER_BUTTON_HEIGHT / 2) - 4));
         touchScreenDisplay.setTextColor(ILI9341_WHITE);
@@ -955,10 +997,10 @@ void waterVolume() {
     touchScreenDisplay.setTextColor(ILI9341_BLACK);
     touchScreenDisplay.setTextSize(2);
     touchScreenDisplay.printf("Fluid OZ's Left");
-    touchScreenDisplay.setCursor((SCREEN_WIDTH / 2), (SCREEN_HEIGHT / 2) - 16);
+    touchScreenDisplay.setCursor((SCREEN_WIDTH / 2) - 4, (SCREEN_HEIGHT / 2) - 16);
     touchScreenDisplay.setTextColor(ILI9341_BLACK);
     touchScreenDisplay.setTextSize(8);
-    touchScreenDisplay.printf("%0.1f", getWaterOZ(weight));
+    touchScreenDisplay.printf("%0.1f", getWaterOZ(weight) + .01f);
 }
 
 float getWaterOZ(float _scaleWeight) {
@@ -972,6 +1014,99 @@ void setWaterScaleCal() {
     delay(WAIT_TIME);
     H2Oscale.tare(10);
     H2Oscale.set_scale(CAL_FACTOR);
+    calDone = true;
+}
+
+void showCalInstruction() {
+    touchScreenDisplay.fillRect(INSTRUCTIONS_X_ORIGIN,
+                                INSTRUCTIONS_Y_ORIGIN,
+                                INSTRUCTIONS_WIDTH,
+                                INSTRUCTIONS_HEIGHT,
+                                ILI9341_BLACK);
+    //    Show text
+    touchScreenDisplay.setCursor(0, 5);
+    touchScreenDisplay.setTextColor(ILI9341_WHITE);
+    touchScreenDisplay.setTextSize(2);
+    touchScreenDisplay.printf(
+            "1.Place an empty water\n  bottle on the scale\n"
+            "2.Press the Set button\n"
+            "3.Wait for the home button  to go green\n"
+            "4.All done!");
+}
+
+void setCalMenu() {
+    Serial.printf("Water Set Cal waiting for touch\n");
+    delay(500);
+    setCalButtonSelect();
+    if (newButtonPressed) {
+        if (!waterSetCalButtonShowing) {
+            waterSetCalButtonShowing = true;
+            waterResetCalButton();
+        }
+        if (!homeButtonShowing) {
+            homeButtonShowing = true;
+            homeButton();
+        }
+    }
+}
+
+void setCalButtonSelect() {
+    // Retrieve a point
+    TS_Point touchedPoint = capacitiveTouchScreen.getPoint();
+    // flip it around to match the screen.
+    touchedPoint.x = map(touchedPoint.x, 0, 240, 240, 0);
+    touchedPoint.y = map(touchedPoint.y, 0, 320, 320, 0);
+    int y = touchScreenDisplay.height() - touchedPoint.x;
+    int x = touchedPoint.y;
+    if ((x > WATER_SET_BUTTON_X_ORIGIN)
+        && (x < WATER_SET_BUTTON_WIDTH)
+        && (y > WATER_SET_BUTTON_Y_ORIGIN)
+        && (y < WATER_SET_BUTTON_Y_ORIGIN + WATER_SET_BUTTON_HEIGHT)) {
+        Serial.printf("Set Button Pressed\n");
+        waterSetCalButtonPressed = true;
+        waterSetCalButtonShowing = false;
+        waterVolumeShowing = true;
+        homeButtonPressed = false;
+        calDone = false;
+        newButtonPressed = true;
+    } else if ((x > HOME_BUTTON_X_ORIGIN)
+               && (x < HOME_BUTTON_WIDTH)
+               && (y > HOME_BUTTON_Y_ORIGIN)
+               && (y < (HOME_BUTTON_Y_ORIGIN + HOME_BUTTON_HEIGHT))) {
+        Serial.printf("Home Button Pressed\n");
+        waterSetCalButtonPressed = false;
+        waterSetCalButtonShowing = true;
+        homeButtonPressed = true;
+        newButtonPressed = true;
+    }
+}
+
+void waterResetCalButton() {
+    if (waterSetCalButtonPressed) {
+        touchScreenDisplay.fillRect(WATER_SET_BUTTON_X_ORIGIN,
+                                    WATER_SET_BUTTON_Y_ORIGIN,
+                                    WATER_SET_BUTTON_WIDTH,
+                                    WATER_SET_BUTTON_HEIGHT,
+                                    ILI9341_DARKGREY);
+        touchScreenDisplay.setCursor((WATER_SET_BUTTON_WIDTH / 2) - 70,
+                                     WATER_SET_BUTTON_Y_ORIGIN + (WATER_SET_BUTTON_HEIGHT / 2) - 4);
+        touchScreenDisplay.setTextColor(ILI9341_WHITE);
+        touchScreenDisplay.setTextSize(2);
+        touchScreenDisplay.printf("Set Calibration\n");
+        setWaterScaleCal();
+        delay(TRANS_DELAY);
+    } else {
+        touchScreenDisplay.fillRect(WATER_SET_BUTTON_X_ORIGIN,
+                                    WATER_SET_BUTTON_Y_ORIGIN,
+                                    WATER_SET_BUTTON_WIDTH,
+                                    WATER_SET_BUTTON_HEIGHT,
+                                    ILI9341_GREEN);
+        touchScreenDisplay.setCursor((WATER_SET_BUTTON_WIDTH / 2) - 60,
+                                     WATER_SET_BUTTON_Y_ORIGIN + (WATER_SET_BUTTON_HEIGHT / 2));
+        touchScreenDisplay.setTextColor(ILI9341_WHITE);
+        touchScreenDisplay.setTextSize(2);
+        touchScreenDisplay.printf("Set Calibration\n");
+    }
 }
 
 void publishReadings() {
