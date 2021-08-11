@@ -231,21 +231,28 @@ Adafruit_MQTT_Publish mqttPubWaterWeight = Adafruit_MQTT_Publish(&mqtt, AIO_USER
 "/feeds/waterweight");
 
 // NeoPixel
-Adafruit_NeoPixel NPCalendarStrip(NP_CALENDAR_STRIP_PIN, NP_CALENDAR_STRIP_COUNT);
-Adafruit_NeoPixel NPBackGroundStrip(NP_BACKGROUND_STRIP_PIN, NP_BACKGROUND_STRIP_COUNT);
+Adafruit_NeoPixel NPCalendarStrip(NP_CALENDAR_STRIP_COUNT, NP_CALENDAR_STRIP_PIN, WS2812B);
+Adafruit_NeoPixel NPBackGroundStrip(NP_BACKGROUND_STRIP_COUNT, NP_BACKGROUND_STRIP_PIN, WS2812B);
 
 void setup() {
+    Serial.begin(115200);
     timeSetUp();
+    Serial.println("Time Setup");
     NPSetUp();
+    Serial.println("NP's Setup");
     displaySetUp();
+    Serial.println("Display Setup");
     scaleSetUp();
+    Serial.println("Scale Setup");
     setUpTouchScreen();
+    Serial.println("TouchScreen Setup");
     outLineCalendarNP();
+    Serial.println("Calendar NP's Setup");
 }
 
 void loop() {
     menuSelect();
-    nightLighting();
+    // nightLighting();
 }
 
 void menuSelect() {
@@ -322,11 +329,13 @@ void scaleSetUp() {
 void NPSetUp() {
     // Background Strip
     NPBackGroundStrip.begin();
+    NPBackGroundStrip.show();
     NPBackGroundStrip.setPixelColor(NP_BACKGROUND_STRIP_COUNT, NPColorArray[0]);
     NPBackGroundStrip.setBrightness(NPBrightness);
     NPBackGroundStrip.show();
     // Calendar Strip
     NPCalendarStrip.begin();
+    NPCalendarStrip.show();
     // Set to green  
     NPCalendarStrip.setPixelColor(NP_BACKGROUND_STRIP_COUNT, NPColorArray[3]);
     NPCalendarStrip.setBrightness(NPBrightness);

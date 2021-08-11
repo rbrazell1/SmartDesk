@@ -67,6 +67,7 @@ void plusBrightnessNP();
 void lessBrightnessNP();
 void turnOffBackGroundNP();
 void turnOnBackGroundNP();
+void nightLighting();
 void publishReadings();
 void MQTT_connect();
 unsigned long testFillScreen();
@@ -95,10 +96,14 @@ unsigned int _timerTarget;
 
 int shownColor;
 int dayOfMonth;
+int timeOfDay;
+int ambentBrightness;
 
-uint16_t colorArray[8] = {ILI9341_NAVY, ILI9341_LIGHTGREY, ILI9341_CYAN, ILI9341_GREEN, ILI9341_YELLOW, ILI9341_ORANGE, ILI9341_RED, ILI9341_MAGENTA};
+uint16_t colorArray[8] = {ILI9341_NAVY, ILI9341_LIGHTGREY, ILI9341_CYAN, ILI9341_GREEN, ILI9341_YELLOW, ILI9341_ORANGE,
+                          ILI9341_RED, ILI9341_MAGENTA};
 
-uint32_t NPColorArray[8] = {RGB_COLOR_BLUE, RGB_COLOR_GRAY, RGB_COLOR_CYAN, RGB_COLOR_GREEN, RGB_COLOR_YELLOW, RGB_COLOR_ORANGE, RGB_COLOR_RED, RGB_COLOR_MAGENTA};
+uint32_t NPColorArray[8] = {RGB_COLOR_BLUE, RGB_COLOR_GRAY, RGB_COLOR_CYAN, RGB_COLOR_GREEN, RGB_COLOR_YELLOW,
+                            RGB_COLOR_ORANGE, RGB_COLOR_RED, RGB_COLOR_MAGENTA};
 
 // LOAD CELL
 
@@ -278,20 +283,28 @@ Adafruit_MQTT_Publish mqttPubWaterWeight = Adafruit_MQTT_Publish(&mqtt, AIO_USER
 "/feeds/waterweight");
 
 // NeoPixel
-Adafruit_NeoPixel NPCalendarStrip(NP_CALENDAR_STRIP_PIN, NP_CALENDAR_STRIP_COUNT);
-Adafruit_NeoPixel NPBackGroundStrip(NP_BACKGROUND_STRIP_PIN, NP_BACKGROUND_STRIP_COUNT);
+Adafruit_NeoPixel NPCalendarStrip(NP_CALENDAR_STRIP_COUNT, NP_CALENDAR_STRIP_PIN, WS2812B);
+Adafruit_NeoPixel NPBackGroundStrip(NP_BACKGROUND_STRIP_COUNT, NP_BACKGROUND_STRIP_PIN, WS2812B);
 
 void setup() {
+    Serial.begin(115200);
     timeSetUp();
+    Serial.println("Time Setup");
     NPSetUp();
+    Serial.println("NP's Setup");
     displaySetUp();
+    Serial.println("Display Setup");
     scaleSetUp();
+    Serial.println("Scale Setup");
     setUpTouchScreen();
+    Serial.println("TouchScreen Setup");
     outLineCalendarNP();
+    Serial.println("Calendar NP's Setup");
 }
 
 void loop() {
     menuSelect();
+    // nightLighting();
 }
 
 void menuSelect() {
@@ -310,7 +323,7 @@ void menuSelect() {
 }
 
 void timeSetUp() {
-dayOfMonth = Time.day(-6);
+    dayOfMonth = Time.day(-6);
 }
 
 void setUpTouchScreen() {
@@ -368,11 +381,13 @@ void scaleSetUp() {
 void NPSetUp() {
     // Background Strip
     NPBackGroundStrip.begin();
+    NPBackGroundStrip.show();
     NPBackGroundStrip.setPixelColor(NP_BACKGROUND_STRIP_COUNT, NPColorArray[0]);
     NPBackGroundStrip.setBrightness(NPBrightness);
     NPBackGroundStrip.show();
     // Calendar Strip
     NPCalendarStrip.begin();
+    NPCalendarStrip.show();
     // Set to green  
     NPCalendarStrip.setPixelColor(NP_BACKGROUND_STRIP_COUNT, NPColorArray[3]);
     NPCalendarStrip.setBrightness(NPBrightness);
@@ -565,9 +580,9 @@ void homeButtonMenuSelect() {
     int y = touchScreenDisplay.height() - touchedPoint.x;
     int x = touchedPoint.y;
     if ((x > LIGHT_BUTTON_X_ORIGIN)
-    && (x < (LIGHT_BUTTON_X_ORIGIN + LIGHT_BUTTON_WIDTH))
-    && (y > LIGHT_BUTTON_Y_ORIGIN)
-    && (y < (LIGHT_BUTTON_Y_ORIGIN + LIGHT_BUTTON_HEIGHT))) {
+        && (x < (LIGHT_BUTTON_X_ORIGIN + LIGHT_BUTTON_WIDTH))
+        && (y > LIGHT_BUTTON_Y_ORIGIN)
+        && (y < (LIGHT_BUTTON_Y_ORIGIN + LIGHT_BUTTON_HEIGHT))) {
         Serial.printf("Light Button Pressed\n");
         lightButtonPressed = true;
         lightButtonShowing = false;
@@ -576,9 +591,9 @@ void homeButtonMenuSelect() {
         fingerPrintButtonPressed = false;
         newButtonPressed = true;
     } else if ((x > WATER_BUTTON_X_ORIGIN)
-    && (x < (WATER_BUTTON_X_ORIGIN + WATER_BUTTON_WIDTH))
-    && (y > WATER_BUTTON_Y_ORIGIN)
-    && (y < (WATER_BUTTON_Y_ORIGIN + WATER_BUTTON_HEIGHT))) {
+               && (x < (WATER_BUTTON_X_ORIGIN + WATER_BUTTON_WIDTH))
+               && (y > WATER_BUTTON_Y_ORIGIN)
+               && (y < (WATER_BUTTON_Y_ORIGIN + WATER_BUTTON_HEIGHT))) {
         Serial.printf("Water Button Pressed\n");
         lightButtonPressed = false;
         waterButtonPressed = true;
@@ -587,9 +602,9 @@ void homeButtonMenuSelect() {
         fingerPrintButtonPressed = false;
         newButtonPressed = true;
     } else if ((x > CALENDAR_BUTTON_X_ORIGIN)
-    && (x < CALENDAR_BUTTON_X_ORIGIN + CALENDAR_BUTTON_WIDTH)
-    && (y > CALENDAR_BUTTON_Y_ORIGIN)
-    && (y < (CALENDAR_BUTTON_Y_ORIGIN + CALENDAR_BUTTON_HEIGHT))) {
+               && (x < CALENDAR_BUTTON_X_ORIGIN + CALENDAR_BUTTON_WIDTH)
+               && (y > CALENDAR_BUTTON_Y_ORIGIN)
+               && (y < (CALENDAR_BUTTON_Y_ORIGIN + CALENDAR_BUTTON_HEIGHT))) {
         Serial.printf("Calendar Button Pressed\n");
         lightButtonPressed = false;
         waterButtonPressed = false;
@@ -598,9 +613,9 @@ void homeButtonMenuSelect() {
         fingerPrintButtonPressed = false;
         newButtonPressed = true;
     } else if ((x > FINGERPRINT_BUTTON_X_ORIGIN)
-    && (x < FINGERPRINT_BUTTON_X_ORIGIN + FINGERPRINT_BUTTON_WIDTH)
-    && (y > FINGERPRINT_BUTTON_Y_ORIGIN)
-    && (y < (FINGERPRINT_BUTTON_Y_ORIGIN + FINGERPRINT_BUTTON_HEIGHT))) {
+               && (x < FINGERPRINT_BUTTON_X_ORIGIN + FINGERPRINT_BUTTON_WIDTH)
+               && (y > FINGERPRINT_BUTTON_Y_ORIGIN)
+               && (y < (FINGERPRINT_BUTTON_Y_ORIGIN + FINGERPRINT_BUTTON_HEIGHT))) {
         Serial.printf("Finger Print Button Pressed\n");
         lightButtonPressed = false;
         waterButtonPressed = false;
@@ -712,9 +727,9 @@ void lightButtonMenuSelect() {
     int y = touchScreenDisplay.height() - touchedPoint.x;
     int x = touchedPoint.y;
     if ((x > ON_BUTTON_X_ORIGIN)
-    && (x < ON_BUTTON_X_ORIGIN + ON_BUTTON_WIDTH)
-    && (y > ON_BUTTON_Y_ORIGIN)
-    && (y < ON_BUTTON_Y_ORIGIN + ON_BUTTON_HEIGHT)) {
+        && (x < ON_BUTTON_X_ORIGIN + ON_BUTTON_WIDTH)
+        && (y > ON_BUTTON_Y_ORIGIN)
+        && (y < ON_BUTTON_Y_ORIGIN + ON_BUTTON_HEIGHT)) {
         onButtonPressed = true;
         onButtonShowing = false;
         offButtonPressed = false;
@@ -724,9 +739,9 @@ void lightButtonMenuSelect() {
         homeButtonPressed = false;
         newButtonPressed = true;
     } else if ((x > OFF_BUTTON_X_ORIGIN)
-    && (x < OFF_BUTTON_X_ORIGIN + ON_BUTTON_WIDTH)
-    && (y > OFF_BUTTON_Y_ORIGIN)
-    && (y < OFF_BUTTON_Y_ORIGIN + OFF_BUTTON_HEIGHT)) {
+               && (x < OFF_BUTTON_X_ORIGIN + ON_BUTTON_WIDTH)
+               && (y > OFF_BUTTON_Y_ORIGIN)
+               && (y < OFF_BUTTON_Y_ORIGIN + OFF_BUTTON_HEIGHT)) {
         onButtonPressed = false;
         offButtonPressed = true;
         offButtonShowing = false;
@@ -736,9 +751,9 @@ void lightButtonMenuSelect() {
         homeButtonPressed = false;
         newButtonPressed = true;
     } else if ((x > COLOR_BUTTON_X_ORIGIN)
-    && (x < COLOR_BUTTON_X_ORIGIN + COLOR_BUTTON_WIDTH)
-    && (y > COLOR_BUTTON_Y_ORIGIN)
-    && (y < COLOR_BUTTON_Y_ORIGIN + COLOR_BUTTON_HEIGHT)) {
+               && (x < COLOR_BUTTON_X_ORIGIN + COLOR_BUTTON_WIDTH)
+               && (y > COLOR_BUTTON_Y_ORIGIN)
+               && (y < COLOR_BUTTON_Y_ORIGIN + COLOR_BUTTON_HEIGHT)) {
         onButtonPressed = false;
         offButtonPressed = false;
         colorButtonPressed = true;
@@ -748,9 +763,9 @@ void lightButtonMenuSelect() {
         homeButtonPressed = false;
         newButtonPressed = true;
     } else if ((x > BRIGHT_PLUS_X_ORIGIN)
-    && (x < BRIGHT_PLUS_X_ORIGIN + BRIGHT_PLUS_WIDTH)
-    && (y > BRIGHT_PLUS_Y_ORIGIN)
-    && (y < BRIGHT_PLUS_Y_ORIGIN + BRIGHT_PLUS_HEIGHT)) {
+               && (x < BRIGHT_PLUS_X_ORIGIN + BRIGHT_PLUS_WIDTH)
+               && (y > BRIGHT_PLUS_Y_ORIGIN)
+               && (y < BRIGHT_PLUS_Y_ORIGIN + BRIGHT_PLUS_HEIGHT)) {
         onButtonPressed = false;
         offButtonPressed = false;
         colorButtonPressed = false;
@@ -760,9 +775,9 @@ void lightButtonMenuSelect() {
         homeButtonPressed = false;
         newButtonPressed = true;
     } else if ((x > BRIGHT_LESS_X_ORIGIN)
-    && (x < BRIGHT_LESS_X_ORIGIN + BRIGHT_LESS_WIDTH)
-    && (y > BRIGHT_LESS_Y_ORIGIN)
-    && (y < BRIGHT_LESS_Y_ORIGIN + BRIGHT_LESS_HEIGHT)) {
+               && (x < BRIGHT_LESS_X_ORIGIN + BRIGHT_LESS_WIDTH)
+               && (y > BRIGHT_LESS_Y_ORIGIN)
+               && (y < BRIGHT_LESS_Y_ORIGIN + BRIGHT_LESS_HEIGHT)) {
         onButtonPressed = false;
         offButtonPressed = false;
         colorButtonPressed = false;
@@ -772,9 +787,9 @@ void lightButtonMenuSelect() {
         homeButtonPressed = false;
         newButtonPressed = true;
     } else if ((x > HOME_BUTTON_X_ORIGIN)
-    && (x < HOME_BUTTON_X_ORIGIN + HOME_BUTTON_WIDTH)
-    && (y > HOME_BUTTON_Y_ORIGIN)
-    && (y < HOME_BUTTON_Y_ORIGIN + HOME_BUTTON_HEIGHT)) {
+               && (x < HOME_BUTTON_X_ORIGIN + HOME_BUTTON_WIDTH)
+               && (y > HOME_BUTTON_Y_ORIGIN)
+               && (y < HOME_BUTTON_Y_ORIGIN + HOME_BUTTON_HEIGHT)) {
         onButtonPressed = false;
         offButtonPressed = false;
         colorButtonPressed = false;
@@ -857,7 +872,7 @@ void colorButton() {
         touchScreenDisplay.setTextSize(2);
         touchScreenDisplay.printf("Color\n");
         delay(TRANS_DELAY);
-        shownColor < 7? shownColor++: shownColor = 0;
+        shownColor < 7 ? shownColor++ : shownColor = 0;
         backGroundNP();
     } else {
         touchScreenDisplay.fillRect(COLOR_BUTTON_X_ORIGIN,
@@ -1001,9 +1016,9 @@ void waterButtonMenuSelect() {
     int y = touchScreenDisplay.height() - touchedPoint.x;
     int x = touchedPoint.y;
     if ((x > CAL_BUTTON_X_ORIGIN)
-    && (x < CAL_BUTTON_WIDTH)
-    && (y > CAL_BUTTON_Y_ORIGIN)
-    && (y < CAL_BUTTON_HEIGHT)) {
+        && (x < CAL_BUTTON_WIDTH)
+        && (y > CAL_BUTTON_Y_ORIGIN)
+        && (y < CAL_BUTTON_HEIGHT)) {
         Serial.printf("Cal Button Pressed\n");
         waterScaleCalButtonPressed = true;
         waterScaleCalButtonShowing = false;
@@ -1015,9 +1030,9 @@ void waterButtonMenuSelect() {
         newButtonPressed = true;
         calDone = false;
     } else if ((x > HOME_BUTTON_X_ORIGIN)
-    && (x < HOME_BUTTON_WIDTH)
-    && (y > HOME_BUTTON_Y_ORIGIN)
-    && (y < (HOME_BUTTON_Y_ORIGIN + HOME_BUTTON_HEIGHT))) {
+               && (x < HOME_BUTTON_WIDTH)
+               && (y > HOME_BUTTON_Y_ORIGIN)
+               && (y < (HOME_BUTTON_Y_ORIGIN + HOME_BUTTON_HEIGHT))) {
         Serial.printf("Home Button Pressed\n");
         waterScaleCalButtonPressed = false;
         homeButtonShowing = false;
@@ -1138,9 +1153,9 @@ void waterScaleCalButtonMenuSelect() {
     int y = touchScreenDisplay.height() - touchedPoint.x;
     int x = touchedPoint.y;
     if ((x > SET_CAL_BUTTON_X_ORIGIN)
-    && (x < SET_CAL_BUTTON_WIDTH)
-    && (y > SET_CAL_BUTTON_Y_ORIGIN)
-    && (y < SET_CAL_BUTTON_Y_ORIGIN + SET_CAL_BUTTON_HEIGHT)) {
+        && (x < SET_CAL_BUTTON_WIDTH)
+        && (y > SET_CAL_BUTTON_Y_ORIGIN)
+        && (y < SET_CAL_BUTTON_Y_ORIGIN + SET_CAL_BUTTON_HEIGHT)) {
         Serial.printf("Set Button Pressed\n");
         setCalButtonPressed = true;
         setCalButtonShowing = false;
@@ -1150,9 +1165,9 @@ void waterScaleCalButtonMenuSelect() {
         calDone = false;
         newButtonPressed = true;
     } else if ((x > HOME_BUTTON_X_ORIGIN)
-    && (x < HOME_BUTTON_WIDTH)
-    && (y > HOME_BUTTON_Y_ORIGIN)
-    && (y < (HOME_BUTTON_Y_ORIGIN + HOME_BUTTON_HEIGHT))) {
+               && (x < HOME_BUTTON_WIDTH)
+               && (y > HOME_BUTTON_Y_ORIGIN)
+               && (y < (HOME_BUTTON_Y_ORIGIN + HOME_BUTTON_HEIGHT))) {
         Serial.printf("Home Button Pressed\n");
         setCalButtonPressed = false;
         setCalButtonShowing = true;
@@ -1192,30 +1207,39 @@ void SetCalButton() {
 }
 
 void backGroundNP() {
-NPBackGroundStrip.clear();    
-NPBackGroundStrip.setPixelColor(NP_BACKGROUND_STRIP_COUNT, NPColorArray[shownColor]);
-NPBackGroundStrip.show();
+    NPBackGroundStrip.clear();
+    NPBackGroundStrip.setPixelColor(NP_BACKGROUND_STRIP_COUNT, NPColorArray[shownColor]);
+    NPBackGroundStrip.show();
 }
 
 void plusBrightnessNP() {
-NPBackGroundStrip.setBrightness(NPBrightness + BRIGHTNESS_INCRAMENT);
-NPBackGroundStrip.show();
+    NPBackGroundStrip.setBrightness(NPBrightness + BRIGHTNESS_INCRAMENT);
+    NPBackGroundStrip.show();
 }
 
 void lessBrightnessNP() {
-NPBackGroundStrip.setBrightness(NPBrightness - BRIGHTNESS_INCRAMENT);
-NPBackGroundStrip.show();
+    NPBackGroundStrip.setBrightness(NPBrightness - BRIGHTNESS_INCRAMENT);
+    NPBackGroundStrip.show();
 }
 
 void turnOffBackGroundNP() {
-NPBackGroundStrip.setBrightness(0);
-NPBackGroundStrip.show();
+    NPBackGroundStrip.setBrightness(0);
+    NPBackGroundStrip.show();
 }
 
-void turnOnBackGroundNP() {   
-NPBackGroundStrip.setBrightness(NPBrightness);
-NPBackGroundStrip.show();
+void turnOnBackGroundNP() {
+    NPBackGroundStrip.setBrightness(NPBrightness);
+    NPBackGroundStrip.show();
 }
+
+void nightLighting() {
+    timeOfDay = Time.hour();
+    if (timeOfDay > 18) {
+        NPBackGroundStrip.setBrightness(NPBrightness / 2);
+        NPBackGroundStrip.show();
+    }
+}
+
 void publishReadings() {
     MQTT_connect();
     if ((millis() - last) > 120000) {
@@ -1227,7 +1251,6 @@ void publishReadings() {
         last = millis();
     }
     if ((millis() - lastTime > 30000)) {
-
         if (mqtt.Update()) {
             mqttPubWaterWeight.publish(getWaterOZ(weight));
         }
@@ -1267,8 +1290,6 @@ unsigned long testFillScreen() {
     return micros() - start;
 }
 
-
-
 void drawFrame() {
     touchScreenDisplay.drawRect(FRAME_X_ORIGIN, FRAME_Y_ORIGIN, FRAME_WIDTH, FRAME_HEIGHT, ILI9341_BLACK);
 }
@@ -1276,8 +1297,8 @@ void drawFrame() {
 unsigned long testRects(uint16_t color) {
     unsigned long start;
     int n, i, i2,
-    cx = touchScreenDisplay.width() / 2,
-    cy = touchScreenDisplay.height() / 2;
+            cx = touchScreenDisplay.width() / 2,
+            cy = touchScreenDisplay.height() / 2;
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
     n = min(touchScreenDisplay.width(), touchScreenDisplay.height());
     start = micros();
@@ -1291,8 +1312,8 @@ unsigned long testRects(uint16_t color) {
 unsigned long testFilledRects(uint16_t color1, uint16_t color2) {
     unsigned long start, t = 0;
     int n, i, i2,
-    cx = touchScreenDisplay.width() / 2 - 1,
-    cy = touchScreenDisplay.height() / 2 - 1;
+            cx = touchScreenDisplay.width() / 2 - 1,
+            cy = touchScreenDisplay.height() / 2 - 1;
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
     n = min(touchScreenDisplay.width(), touchScreenDisplay.height());
     for (i = n; i > 0; i -= 6) {
