@@ -18,12 +18,12 @@
 #include "Particle.h"
 #include "neopixel.h"
 
-SYSTEM_MODE(AUTOMATIC);
+SYSTEM_MODE(MANUAL);
 
 // IMPORTANT: Set pixel COUNT, PIN and TYPE
-#define PIXEL_PIN D2
-#define PIXEL_COUNT 10
-#define PIXEL_TYPE WS2812B
+#define PIXEL_PIN D8
+#define PIXEL_COUNT 30
+#define PIXEL_TYPE WS2812
 
 Adafruit_NeoPixel strip(PIXEL_COUNT, PIXEL_PIN, PIXEL_TYPE);
 

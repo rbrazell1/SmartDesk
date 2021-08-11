@@ -23,13 +23,13 @@
 // SYSTEM_MODE(MANUAL);
 
 //  PINS
-const int touchScreenDisplayDataCommand = D5;
 const int touchScreenDisplayCS = D4;
-const int SD_CS = D2;
-const int DATA_PIN = A0;
-const int SCK_PIN = A1;
-const int NP_CALENDAR_STRIP_PIN = D6;
-const int NP_BACKGROUND_STRIP_PIN = D8;
+const int touchScreenDisplayDataCommand = D5;
+const int NP_CALENDAR_STRIP_PIN = D7;
+const int DATA_PIN = A5;
+const int SCK_PIN = D2;
+const int NP_BACKGROUND_STRIP_PIN = A2;
+const int AMB_LIGHT_PIN = A3;
 
 const int TOUCH_SENSITIVITY = 128;
 const int TRANS_DELAY = 250;
@@ -38,11 +38,11 @@ const int NP_BACKGROUND_STRIP_COUNT = 30;
 const int BRIGHTNESS_INCRAMENT = 10;
 
 static int NPBrightness = 200;
+static int shownColor;
 
 unsigned int _timerStart;
 unsigned int _timerTarget;
 
-int shownColor;
 int dayOfMonth;
 int timeOfDay;
 int ambentBrightness;
@@ -231,15 +231,17 @@ Adafruit_MQTT_Publish mqttPubWaterWeight = Adafruit_MQTT_Publish(&mqtt, AIO_USER
 "/feeds/waterweight");
 
 // NeoPixel
-Adafruit_NeoPixel NPCalendarStrip(NP_CALENDAR_STRIP_COUNT, NP_CALENDAR_STRIP_PIN, WS2812B);
-Adafruit_NeoPixel NPBackGroundStrip(NP_BACKGROUND_STRIP_COUNT, NP_BACKGROUND_STRIP_PIN, WS2812B);
+Adafruit_NeoPixel NPCalendarStrip(NP_CALENDAR_STRIP_COUNT, NP_CALENDAR_STRIP_PIN, WS2812);
+Adafruit_NeoPixel NPBackGroundStrip(NP_BACKGROUND_STRIP_COUNT, NP_BACKGROUND_STRIP_PIN, WS2812);
 
 void setup() {
     Serial.begin(115200);
+    waitFor(Serial.isConnected, 3000);
     timeSetUp();
     Serial.println("Time Setup");
     NPSetUp();
     Serial.println("NP's Setup");
+    delay(3000);
     displaySetUp();
     Serial.println("Display Setup");
     scaleSetUp();
@@ -252,7 +254,7 @@ void setup() {
 
 void loop() {
     menuSelect();
-    // nightLighting();
+    nightLighting();
 }
 
 void menuSelect() {
@@ -278,13 +280,10 @@ void setUpTouchScreen() {
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
     capacitiveTouchScreen.begin(TOUCH_SENSITIVITY);
     // origin = left, top landscape (Reset button left upper)
-    goToHomeMenu();
     newButtonPressed = false;
 }
 
 void displaySetUp() {
-    Serial.begin(115200);
-    waitFor(Serial.isConnected, 3000);
     Serial.println("Touch Screen Test!");
     touchScreenDisplay.begin();
     // read diagnostics (optional but can help debug problems)
@@ -328,26 +327,27 @@ void scaleSetUp() {
 
 void NPSetUp() {
     // Background Strip
+    NPBackGroundStrip.setBrightness(NPBrightness);
     NPBackGroundStrip.begin();
     NPBackGroundStrip.show();
-    NPBackGroundStrip.setPixelColor(NP_BACKGROUND_STRIP_COUNT, NPColorArray[0]);
-    NPBackGroundStrip.setBrightness(NPBrightness);
-    NPBackGroundStrip.show();
-    // Calendar Strip
+    delay(100);
+    NPCalendarStrip.setBrightness(NPBrightness);
     NPCalendarStrip.begin();
     NPCalendarStrip.show();
+    fillStrip(NPBackGroundStrip, NPColorArray[0]);
+    // Calendar Strip
     // Set to green  
-    NPCalendarStrip.setPixelColor(NP_BACKGROUND_STRIP_COUNT, NPColorArray[3]);
-    NPCalendarStrip.setBrightness(NPBrightness);
+    NPCalendarStrip.clear();
     NPCalendarStrip.show();
+    fillStrip(NPCalendarStrip, NPColorArray[3]);
 }
 
 void outLineCalendarNP() {
     NPCalendarStrip.clear();
     for (int i = 1; i < NP_CALENDAR_STRIP_COUNT; i += 2) {
-        NPCalendarStrip.setPixelColor(i, RGB_COLOR_BLUE);
+        NPCalendarStrip.setPixelColor(i, NPColorArray[0]);
     }
-    NPCalendarStrip.setPixelColor(dayOfMonth, RGB_COLOR_RED);
+    NPCalendarStrip.setPixelColor(dayOfMonth, NPColorArray[6]);
     NPCalendarStrip.show();
 }
 
@@ -850,9 +850,9 @@ void brightPlusButton() {
         touchScreenDisplay.setTextColor(ILI9341_WHITE);
         touchScreenDisplay.setTextSize(5);
         touchScreenDisplay.printf("+\n");
-        delay(TRANS_DELAY);
         plusBrightnessNP();
         backGroundNP();
+        delay(TRANS_DELAY);
         brightLessButton();
         //        TODO add function to change brightness
         touchScreenDisplay.fillRect(BRIGHT_PLUS_X_ORIGIN,
@@ -894,9 +894,9 @@ void brightLessButton() {
         touchScreenDisplay.setTextColor(ILI9341_WHITE);
         touchScreenDisplay.setTextSize(5);
         touchScreenDisplay.printf("-\n");
-        delay(TRANS_DELAY);
         lessBrightnessNP();
         backGroundNP();
+        delay(TRANS_DELAY);
         brightPlusButton();
         //         TODO add function to change brightness
         touchScreenDisplay.fillRect(BRIGHT_LESS_X_ORIGIN,
@@ -1154,33 +1154,44 @@ void SetCalButton() {
     }
 }
 
+void fillStrip(Adafruit_NeoPixel _Strip, uint16_t _HexColor) {
+    _Strip.clear();
+    for (int i = 0; i < _Strip.getNumLeds(); i++) {
+        _Strip.setPixelColor(i, _HexColor);
+    }
+    _Strip.show();
+}
+
 void backGroundNP() {
     NPBackGroundStrip.clear();
-    NPBackGroundStrip.setPixelColor(NP_BACKGROUND_STRIP_COUNT, NPColorArray[shownColor]);
-    NPBackGroundStrip.show();
+    fillStrip(NPBackGroundStrip, NPColorArray[shownColor]);
 }
 
 void plusBrightnessNP() {
+    Serial.println("PLUS * PLUS");
     NPBackGroundStrip.setBrightness(NPBrightness + BRIGHTNESS_INCRAMENT);
     NPBackGroundStrip.show();
 }
 
 void lessBrightnessNP() {
+    Serial.println("LESS * LESS");
     NPBackGroundStrip.setBrightness(NPBrightness - BRIGHTNESS_INCRAMENT);
     NPBackGroundStrip.show();
 }
 
 void turnOffBackGroundNP() {
+    Serial.println("OFF * OFF");
     NPBackGroundStrip.setBrightness(0);
     NPBackGroundStrip.show();
 }
 
 void turnOnBackGroundNP() {
+    Serial.println("ON * ON");
     NPBackGroundStrip.setBrightness(NPBrightness);
     NPBackGroundStrip.show();
 }
 
-void nightLighting() {
+void  nightLighting() {
     timeOfDay = Time.hour();
     if (timeOfDay > 18) {
         NPBackGroundStrip.setBrightness(NPBrightness / 2);
