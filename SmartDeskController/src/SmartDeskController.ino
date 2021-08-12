@@ -26,8 +26,8 @@
 const int touchScreenDisplayCS = D4;
 const int touchScreenDisplayDataCommand = D5;
 const int NP_CALENDAR_STRIP_PIN = D7;
-const int DATA_PIN = A5;
-const int SCK_PIN = D2;
+const int LOADCELL_DATA_PIN = A5;
+const int LOADCELL_SCK_PIN = D2;
 const int NP_BACKGROUND_STRIP_PIN = A2;
 const int AMB_LIGHT_PIN = A3;
 
@@ -218,7 +218,7 @@ Adafruit_ILI9341 touchScreenDisplay(touchScreenDisplayCS, touchScreenDisplayData
 // Touch Screen uses hardware I2C (SCL/SDA)
 Adafruit_FT6206 capacitiveTouchScreen = Adafruit_FT6206();
 
-HX711 H2Oscale(DATA_PIN, SCK_PIN);
+HX711 H2Oscale(LOADCELL_DATA_PIN, LOADCELL_SCK_PIN);
 
 IOTTimer connectTimer;
 IOTTimer publishTimer;
@@ -276,6 +276,7 @@ void menuSelect() {
 
 void timeSetUp() {
     dayOfMonth = Time.day(-6);
+    Serial.printf("The day is %i\n", dayOfMonth);
 }
 
 void setUpTouchScreen() {
@@ -349,10 +350,11 @@ void NPSetUp() {
 
 void outLineCalendarNP() {
     NPCalendarStrip.clear();
-    for (int i = 1; i < NP_CALENDAR_STRIP_COUNT; i += 2) {
+    for (int i = 0; i < NP_CALENDAR_STRIP_COUNT; i += 2) {
         NPCalendarStrip.setPixelColor(i, NPColorArray[0]);
     }
-    NPCalendarStrip.setPixelColor(dayOfMonth, NPColorArray[6]);
+    // TODO map to the right day because its every 2nd one
+    NPCalendarStrip.setPixelColor((12 * 2), NPColorArray[6]);
     NPCalendarStrip.show();
 }
 
@@ -1201,17 +1203,17 @@ void  nightLighting() {
     timeOfDay = Time.hour();
     if (!lightButtonPressed && brightnessTimer.isTimerReady()) {
     ambentBrightness = analogRead(AMB_LIGHT_PIN);
-    mappedAmbentBrightness = map(ambentBrightness, 100, 2100, 0, 255);  
+    mappedAmbentBrightness = map(ambentBrightness, 0, 2200, 1, 254);  
     NPBackGroundStrip.setBrightness(mappedAmbentBrightness);
     NPBrightness = mappedAmbentBrightness;
-    fillBackGroundStrip(NPColorArray[shownColor]);
+        if (timeOfDay > 18) {
+            NPBackGroundStrip.setBrightness(NPBrightness / 2);
+            fillBackGroundStrip(NPColorArray[shownColor]);
+            NPBackGroundStrip.show();
+        }
+    // fillBackGroundStrip(NPColorArray[shownColor]);
     NPBackGroundStrip.show();  
     brightnessTimer.startTimer(100);
-    }
-    if (timeOfDay > 18) {
-        NPBackGroundStrip.setBrightness(NPBrightness / 2);
-        fillBackGroundStrip(NPColorArray[shownColor]);
-        NPBackGroundStrip.show();
     }
 }
 
