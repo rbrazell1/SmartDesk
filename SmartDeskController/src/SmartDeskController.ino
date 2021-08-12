@@ -373,7 +373,7 @@ void outLineCalendarNP() {
         NPCalendarStrip.setPixelColor(i, NPColorArray[0]);
     }
     // TODO map to the right day because its every 2nd one
-    NPCalendarStrip.setPixelColor((12 * 2) - 1, NPColorArray[6]);
+    NPCalendarStrip.setPixelColor((13 * 2) - 1, NPColorArray[6]);
     NPCalendarStrip.show();
 }
 
