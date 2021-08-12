@@ -116,6 +116,7 @@ const int WAIT_TIME = 3000;
 const float WATER_GRAMS = 29.5735295625f;
 
 static float weight;
+float lastWeight;
 
 float tareOffset;
 float rawData;
@@ -406,7 +407,8 @@ void outLineCalendarNP() {
     for (int i = 0; i < NP_CALENDAR_STRIP_COUNT; i += 2) {
         NPCalendarStrip.setPixelColor(i, NPColorArray[0]);
     }
-    NPCalendarStrip.setPixelColor(12, NPColorArray[6]);
+    // TODO map to the right day because its every 2nd one
+    NPCalendarStrip.setPixelColor((12 * 2) - 1, NPColorArray[6]);
     NPCalendarStrip.show();
 }
 
@@ -1001,13 +1003,14 @@ void waterButtonMenu() {
         }
         newButtonPressed = false;
     } else {
-        weight = (-1) * H2Oscale.get_units(SAMPLE);
+        weight = H2Oscale.get_units(SAMPLE);
         // rawData = H2Oscale.get_value(SAMPLE);
         tareOffset = H2Oscale.get_offset();
         scaleCalibration = H2Oscale.get_scale();
         Serial.printf("OZ's: %0.2f\n", getWaterOZ(weight));
         if (publishTimer.isTimerReady()) {
             publishReadings();
+            waterVolume();
             publishTimer.startTimer(30000);
         }
     }
@@ -1099,7 +1102,7 @@ void waterVolume() {
     touchScreenDisplay.printf("Fluid OZ's Left");
     touchScreenDisplay.setCursor((SCREEN_WIDTH / 2) - 4, (SCREEN_HEIGHT / 2) - 16);
     touchScreenDisplay.setTextColor(ILI9341_BLACK);
-    touchScreenDisplay.setTextSize(8);
+    touchScreenDisplay.setTextSize(6);
     touchScreenDisplay.printf("%0.1f", getWaterOZ(weight) + .01f);
 }
 
