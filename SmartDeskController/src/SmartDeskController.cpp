@@ -81,14 +81,14 @@ const int touchScreenDisplayDataCommand = D5;
 const int NP_CALENDAR_STRIP_PIN = D7;
 const int DATA_PIN = A5;
 const int SCK_PIN = D2;
-const int NP_BACKGROUND_STRIP_PIN = D17;
+const int NP_BACKGROUND_STRIP_PIN = A2;
 const int AMB_LIGHT_PIN = A3;
 
 const int TOUCH_SENSITIVITY = 128;
 const int TRANS_DELAY = 250;
 const int NP_CALENDAR_STRIP_COUNT = 62;
 const int NP_BACKGROUND_STRIP_COUNT = 30;
-const int BRIGHTNESS_INCRAMENT = 10;
+const int BRIGHTNESS_INCRAMENT = 50;
 
 static int NPBrightness = 200;
 static int shownColor;
@@ -99,10 +99,11 @@ unsigned int _timerTarget;
 int dayOfMonth;
 int timeOfDay;
 int ambentBrightness;
+int mappedAmbentBrightness;
 
 uint16_t colorArray[8] = {ILI9341_NAVY, ILI9341_LIGHTGREY, ILI9341_CYAN, ILI9341_GREEN, ILI9341_YELLOW, ILI9341_ORANGE,
                           ILI9341_RED, ILI9341_MAGENTA};
-
+// TODO FIX COLORS TO BE RIGHT FOR NP's
 uint32_t NPColorArray[8] = {RGB_COLOR_BLUE, RGB_COLOR_GRAY, RGB_COLOR_CYAN, RGB_COLOR_GREEN, RGB_COLOR_YELLOW,
                             RGB_COLOR_ORANGE, RGB_COLOR_RED, RGB_COLOR_MAGENTA};
 
@@ -274,6 +275,7 @@ HX711 H2Oscale(DATA_PIN, SCK_PIN);
 
 IOTTimer connectTimer;
 IOTTimer publishTimer;
+IOTTimer brightnessTimer;
 
 TCPClient TheClient;
 
@@ -307,6 +309,7 @@ void setup() {
 
 void loop() {
     menuSelect();
+    nightLighting();
 }
 
 void menuSelect() {
@@ -380,6 +383,8 @@ void scaleSetUp() {
 }
 
 void NPSetUp() {
+    pinMode(AMB_LIGHT_PIN, INPUT);
+    brightnessTimer.startTimer(100);
     // Background Strip
     NPBackGroundStrip.setBrightness(NPBrightness);
     NPBackGroundStrip.begin();
@@ -1247,6 +1252,15 @@ void turnOnBackGroundNP() {
 
 void  nightLighting() {
     timeOfDay = Time.hour();
+    if (!lightButtonPressed && brightnessTimer.isTimerReady()) {
+    ambentBrightness = analogRead(AMB_LIGHT_PIN);
+    mappedAmbentBrightness = map(ambentBrightness, 100, 2100, 0, 255);  
+    NPBackGroundStrip.setBrightness(mappedAmbentBrightness);
+    NPBrightness = mappedAmbentBrightness;
+    fillBackGroundStrip(NPColorArray[shownColor]);
+    NPBackGroundStrip.show();  
+    brightnessTimer.startTimer(100);
+    }
     if (timeOfDay > 18) {
         NPBackGroundStrip.setBrightness(NPBrightness / 2);
         fillBackGroundStrip(NPColorArray[shownColor]);
