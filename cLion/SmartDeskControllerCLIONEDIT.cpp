@@ -5,7 +5,6 @@
 *   Date: 8-6-2021
 */
 
-// #include "touchScreen.h"
 #include "Particle.h"
 #include <SPI.h>
 #include <Adafruit_mfGFX.h>
@@ -20,36 +19,40 @@
 #include "Adafruit_MQTT/Adafruit_MQTT_SPARK.h"
 #include <neopixel.h>
 
-// SYSTEM_MODE(MANUAL);
-
 //  PINS
-const int touchScreenDisplayDataCommand = D5;
 const int touchScreenDisplayCS = D4;
-const int SD_CS = D2;
-const int DATA_PIN = A0;
-const int SCK_PIN = A1;
-const int NP_CALENDAR_STRIP_PIN = D6;
-const int NP_BACKGROUND_STRIP_PIN = D8;
+const int touchScreenDisplayDataCommand = D5;
+const int NP_CALENDAR_STRIP_PIN = D7;
+const int LOADCELL_DATA_PIN = A5;
+const int LOADCELL_SCK_PIN = D2;
+const int NP_BACKGROUND_STRIP_PIN = A2;
+const int AMB_LIGHT_PIN = A3;
 
 const int TOUCH_SENSITIVITY = 128;
 const int TRANS_DELAY = 250;
 const int NP_CALENDAR_STRIP_COUNT = 62;
 const int NP_BACKGROUND_STRIP_COUNT = 30;
-const int BRIGHTNESS_INCRAMENT = 10;
+const int BRIGHTNESS_INCRAMENT = 50;
 
+// Starting brightness
 static int NPBrightness = 200;
+
+// Flag to corrdinate all the colors
+static int shownColor;
 
 unsigned int _timerStart;
 unsigned int _timerTarget;
 
-int shownColor;
 int dayOfMonth;
 int timeOfDay;
 int ambentBrightness;
+int mappedAmbentBrightness;
+
+// Arrays for the displaied colors
 
 uint16_t colorArray[8] = {ILI9341_NAVY, ILI9341_LIGHTGREY, ILI9341_CYAN, ILI9341_GREEN, ILI9341_YELLOW, ILI9341_ORANGE,
                           ILI9341_RED, ILI9341_MAGENTA};
-
+// TODO FIX COLORS TO BE RIGHT FOR NP's
 uint32_t NPColorArray[8] = {RGB_COLOR_BLUE, RGB_COLOR_GRAY, RGB_COLOR_CYAN, RGB_COLOR_GREEN, RGB_COLOR_YELLOW,
                             RGB_COLOR_ORANGE, RGB_COLOR_RED, RGB_COLOR_MAGENTA};
 
@@ -62,10 +65,15 @@ const int WAIT_TIME = 3000;
 const float WATER_GRAMS = 29.5735295625f;
 
 static float weight;
+float lastWeight;
 
 float tareOffset;
 float rawData;
 float scaleCalibration;
+
+bool calDone = false;
+
+// Button presses
 
 bool homeButtonPressed = true;
 bool lightButtonPressed = false;
@@ -82,6 +90,8 @@ bool waterScaleCalButtonPressed = false;
 bool waterScaleSetButtonPressed = false;
 bool setCalButtonPressed = false;
 
+// Screen showing
+
 bool homeButtonShowing = false;
 bool lightButtonShowing = false;
 bool waterButtonShowing = false;
@@ -97,9 +107,6 @@ bool waterScaleCalButtonShowing = false;
 bool waterScaleSetButtonShowing = false;
 bool waterVolumeShowing = false;
 bool setCalButtonShowing = false;
-
-bool calDone = false;
-
 
 // Screen size is 320 x 240
 const int SCREEN_WIDTH = 320;
@@ -204,7 +211,7 @@ const int INSTRUCTIONS_Y_ORIGIN = FRAME_Y_ORIGIN;
 const int INSTRUCTIONS_WIDTH = SCREEN_WIDTH;
 const int INSTRUCTIONS_HEIGHT = (SCREEN_HEIGHT - SET_CAL_BUTTON_HEIGHT - HOME_BUTTON_HEIGHT);
 
-// MQTT
+// MQTT vars
 unsigned long last;
 unsigned long lastTime;
 
@@ -217,11 +224,15 @@ Adafruit_ILI9341 touchScreenDisplay(touchScreenDisplayCS, touchScreenDisplayData
 // Touch Screen uses hardware I2C (SCL/SDA)
 Adafruit_FT6206 capacitiveTouchScreen = Adafruit_FT6206();
 
-HX711 H2Oscale(DATA_PIN, SCK_PIN);
+// Loadcell
+HX711 H2Oscale(LOADCELL_DATA_PIN, LOADCELL_SCK_PIN);
 
+// Timers
 IOTTimer connectTimer;
 IOTTimer publishTimer;
+IOTTimer brightnessTimer;
 
+// MQTT Constructors
 TCPClient TheClient;
 
 Adafruit_MQTT_SPARK mqtt(&TheClient, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_KEY);
@@ -231,23 +242,36 @@ Adafruit_MQTT_Publish mqttPubWaterWeight = Adafruit_MQTT_Publish(&mqtt, AIO_USER
 "/feeds/waterweight");
 
 // NeoPixel
-Adafruit_NeoPixel NPCalendarStrip(NP_CALENDAR_STRIP_PIN, NP_CALENDAR_STRIP_COUNT);
-Adafruit_NeoPixel NPBackGroundStrip(NP_BACKGROUND_STRIP_PIN, NP_BACKGROUND_STRIP_COUNT);
+Adafruit_NeoPixel NPCalendarStrip(NP_CALENDAR_STRIP_COUNT, NP_CALENDAR_STRIP_PIN, WS2812);
+Adafruit_NeoPixel NPBackGroundStrip(NP_BACKGROUND_STRIP_COUNT, NP_BACKGROUND_STRIP_PIN, WS2812);
 
+// Starting the desk up
 void setup() {
+    Serial.begin(115200);
+    waitFor(Serial.isConnected, 3000);
     timeSetUp();
+    Serial.println("Time Setup");
     NPSetUp();
+    Serial.println("NP's Setup");
     displaySetUp();
+    Serial.println("Display Setup");
     scaleSetUp();
+    Serial.println("Scale Setup");
     setUpTouchScreen();
+    Serial.println("TouchScreen Setup");
     outLineCalendarNP();
+    Serial.println("Calendar NP's Setup");
+    // Uncomment to be able to read the prints
+    // delay(5000);
 }
 
+// Largely controlled by the touch screen menus
 void loop() {
     menuSelect();
     nightLighting();
 }
 
+// Funtion to determin what menu the user is on
 void menuSelect() {
     if (homeButtonPressed) {
         homeMenu();
@@ -263,21 +287,24 @@ void menuSelect() {
     }
 }
 
+// Function to ensure the time function of Particle to connected and to get the day
 void timeSetUp() {
     dayOfMonth = Time.day(-6);
+    Serial.printf("The day is %i\n", dayOfMonth);
 }
 
+// Function to start the touch part of the touch screen display
 void setUpTouchScreen() {
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
     capacitiveTouchScreen.begin(TOUCH_SENSITIVITY);
+    delay(100);
     // origin = left, top landscape (Reset button left upper)
     goToHomeMenu();
     newButtonPressed = false;
 }
 
+// Function to start the dislpay part of the touch screen display
 void displaySetUp() {
-    Serial.begin(115200);
-    waitFor(Serial.isConnected, 3000);
     Serial.println("Touch Screen Test!");
     touchScreenDisplay.begin();
     // read diagnostics (optional but can help debug problems)
@@ -296,7 +323,7 @@ void displaySetUp() {
     x = touchScreenDisplay.readcommand8(ILI9341_RDSELFDIAG);
     Serial.printf("Self Diagnostic: 0x%x\n", x);
 
-    Serial.println("Done!");
+    Serial.println("Done with diagnostics!");
     //    End diagnostics
     touchScreenDisplay.setRotation(1);
     //    testFillScreen();
@@ -312,6 +339,7 @@ void displaySetUp() {
     // delay(5000);
 }
 
+// Function to start the water scale
 void scaleSetUp() {
     WiFi.connect();
     setWaterScaleCal();
@@ -319,29 +347,37 @@ void scaleSetUp() {
     publishTimer.startTimer(30000);
 }
 
+// Function to start the NPs
 void NPSetUp() {
+    pinMode(AMB_LIGHT_PIN, INPUT);
+    brightnessTimer.startTimer(100);
     // Background Strip
-    NPBackGroundStrip.begin();
-    NPBackGroundStrip.setPixelColor(NP_BACKGROUND_STRIP_COUNT, NPColorArray[0]);
     NPBackGroundStrip.setBrightness(NPBrightness);
+    NPBackGroundStrip.begin();
     NPBackGroundStrip.show();
-    // Calendar Strip
-    NPCalendarStrip.begin();
-    // Set to green
-    NPCalendarStrip.setPixelColor(NP_BACKGROUND_STRIP_COUNT, NPColorArray[3]);
+    delay(100);
     NPCalendarStrip.setBrightness(NPBrightness);
+    NPCalendarStrip.begin();
+    NPCalendarStrip.show();
+    fillBackGroundStrip(NPColorArray[0]);
+    // Calendar Strip
+    // Set to green
+    NPCalendarStrip.clear();
     NPCalendarStrip.show();
 }
 
+// Function to set the calendar NPs correctly for the given day
 void outLineCalendarNP() {
     NPCalendarStrip.clear();
-    for (int i = 1; i < NP_CALENDAR_STRIP_COUNT; i += 2) {
-        NPCalendarStrip.setPixelColor(i, RGB_COLOR_BLUE);
+    for (int i = 0; i < NP_CALENDAR_STRIP_COUNT; i += 2) {
+        NPCalendarStrip.setPixelColor(i, NPColorArray[0]);
     }
-    NPCalendarStrip.setPixelColor(dayOfMonth, RGB_COLOR_RED);
+    // TODO map to the right day because its every 2nd one
+    NPCalendarStrip.setPixelColor((12 * 2) - 1, NPColorArray[6]);
     NPCalendarStrip.show();
 }
 
+// Function to determin what to do on the home menu
 void homeMenu() {
     Serial.printf("Checking if home menu touched anywhere\n");
     homeButtonMenuSelect();
@@ -366,6 +402,7 @@ void homeMenu() {
     }
 }
 
+// How to show the lightButton on the screen
 void lightButton() {
     if (lightButtonPressed) {
         touchScreenDisplay.fillRect(LIGHT_BUTTON_X_ORIGIN,
@@ -402,6 +439,7 @@ void lightButton() {
     }
 }
 
+// How to show the waterButton on the screen
 void waterButton() {
     if (waterButtonPressed) {
         touchScreenDisplay.fillRect(WATER_BUTTON_X_ORIGIN,
@@ -446,6 +484,7 @@ void waterButton() {
     }
 }
 
+// How to show the calendarButton on the screen
 void calendarButton() {
     if (calendarButtonPressed) {
         touchScreenDisplay.fillRect(CALENDAR_BUTTON_X_ORIGIN,
@@ -475,6 +514,7 @@ void calendarButton() {
     }
 }
 
+// How to show the fingerPrintButton on the screen
 void fingerPrintButton() {
     if (fingerPrintButtonPressed) {
         touchScreenDisplay.fillRect(FINGERPRINT_BUTTON_X_ORIGIN,
@@ -510,6 +550,7 @@ void fingerPrintButton() {
     }
 }
 
+// Function to determin which button is pressed
 void homeButtonMenuSelect() {
     // Retrieve a point
     TS_Point touchedPoint = capacitiveTouchScreen.getPoint();
@@ -565,6 +606,7 @@ void homeButtonMenuSelect() {
     }
 }
 
+// Function to get back to the home menu from any other menu
 void goToHomeMenu() {
     homeButtonPressed = true;
 
@@ -586,6 +628,7 @@ void goToHomeMenu() {
     homeMenu();
 }
 
+// How to show the homeButton on the screen
 void homeButton() {
     if (homeButtonPressed) {
         touchScreenDisplay.fillRect(HOME_BUTTON_X_ORIGIN,
@@ -625,6 +668,7 @@ void homeButton() {
     }
 }
 
+// Function to determin what to do in the light menu
 void lightButtonMenu() {
     Serial.printf("Light menu waiting for touch\n");
     lightButtonMenuSelect();
@@ -657,6 +701,7 @@ void lightButtonMenu() {
     }
 }
 
+// Function to determin what button is pressed on the light menu
 void lightButtonMenuSelect() {
     // Retrieve a point
     TS_Point touchedPoint = capacitiveTouchScreen.getPoint();
@@ -740,6 +785,7 @@ void lightButtonMenuSelect() {
     }
 }
 
+// How to show the onButton on the screen
 void onButton() {
     if (onButtonPressed) {
         touchScreenDisplay.fillRect(ON_BUTTON_X_ORIGIN,
@@ -769,6 +815,7 @@ void onButton() {
     }
 }
 
+// How to show the offButton on the screen
 void offButton() {
     if (offButtonPressed) {
         touchScreenDisplay.fillRect(OFF_BUTTON_X_ORIGIN,
@@ -798,6 +845,7 @@ void offButton() {
     }
 }
 
+// How to show the colorButton on the screen
 void colorButton() {
     if (colorButtonPressed) {
         touchScreenDisplay.fillRect(COLOR_BUTTON_X_ORIGIN,
@@ -810,16 +858,15 @@ void colorButton() {
         touchScreenDisplay.setTextColor(ILI9341_WHITE);
         touchScreenDisplay.setTextSize(2);
         touchScreenDisplay.printf("Color\n");
+        backGroundNP();
         delay(TRANS_DELAY);
         shownColor < 7 ? shownColor++ : shownColor = 0;
-        backGroundNP();
     } else {
         touchScreenDisplay.fillRect(COLOR_BUTTON_X_ORIGIN,
                                     COLOR_BUTTON_Y_ORIGIN,
                                     COLOR_BUTTON_WIDTH,
                                     COLOR_BUTTON_HEIGHT,
-                                    ILI9341_BLUE);
-        //        TODO add hash map to show the current color selected
+                                    colorArray[shownColor]);
         //        Show text
         touchScreenDisplay.setCursor(((COLOR_BUTTON_WIDTH / 2) - 30) + ON_BUTTON_WIDTH, (COLOR_BUTTON_HEIGHT / 2) - 6);
         touchScreenDisplay.setTextColor(ILI9341_WHITE);
@@ -828,6 +875,7 @@ void colorButton() {
     }
 }
 
+// How to show the button that is a "+" to increase the NP brightness
 void brightPlusButton() {
     if (brightPlusButtonPressed) {
         touchScreenDisplay.fillRect(BRIGHT_PLUS_X_ORIGIN,
@@ -841,9 +889,9 @@ void brightPlusButton() {
         touchScreenDisplay.setTextColor(ILI9341_WHITE);
         touchScreenDisplay.setTextSize(5);
         touchScreenDisplay.printf("+\n");
-        delay(TRANS_DELAY);
         plusBrightnessNP();
         backGroundNP();
+        delay(TRANS_DELAY);
         brightLessButton();
         //        TODO add function to change brightness
         touchScreenDisplay.fillRect(BRIGHT_PLUS_X_ORIGIN,
@@ -872,6 +920,7 @@ void brightPlusButton() {
     }
 }
 
+// How to show the button that is a "-" to decrease the NP brightness
 void brightLessButton() {
     if (brightLessButtonPressed) {
         touchScreenDisplay.fillRect(BRIGHT_LESS_X_ORIGIN,
@@ -885,9 +934,9 @@ void brightLessButton() {
         touchScreenDisplay.setTextColor(ILI9341_WHITE);
         touchScreenDisplay.setTextSize(5);
         touchScreenDisplay.printf("-\n");
-        delay(TRANS_DELAY);
         lessBrightnessNP();
         backGroundNP();
+        delay(TRANS_DELAY);
         brightPlusButton();
         //         TODO add function to change brightness
         touchScreenDisplay.fillRect(BRIGHT_LESS_X_ORIGIN,
@@ -916,6 +965,7 @@ void brightLessButton() {
     }
 }
 
+// Function to determin what to do on the water menu
 void waterButtonMenu() {
     Serial.printf("Water menu waiting for touch\n");
     waterButtonMenuSelect();
@@ -934,18 +984,20 @@ void waterButtonMenu() {
         }
         newButtonPressed = false;
     } else {
-        weight = (-1) * H2Oscale.get_units(SAMPLE);
+        weight = H2Oscale.get_units(SAMPLE);
         // rawData = H2Oscale.get_value(SAMPLE);
         tareOffset = H2Oscale.get_offset();
         scaleCalibration = H2Oscale.get_scale();
         Serial.printf("OZ's: %0.2f\n", getWaterOZ(weight));
         if (publishTimer.isTimerReady()) {
             publishReadings();
+            waterVolume();
             publishTimer.startTimer(30000);
         }
     }
 }
 
+// Function to determin what button is pressed on the water menu
 void waterButtonMenuSelect() {
     // Retrieve a point
     TS_Point touchedPoint = capacitiveTouchScreen.getPoint();
@@ -980,6 +1032,7 @@ void waterButtonMenuSelect() {
     }
 }
 
+// How to show the waterScaleCalButton on the screen
 void waterScaleCalButton() {
     if (waterScaleCalButtonPressed) {
         touchScreenDisplay.fillRect(CAL_BUTTON_X_ORIGIN,
@@ -1019,6 +1072,7 @@ void waterScaleCalButton() {
     }
 }
 
+// How to show the water volume left on the screen
 void waterVolume() {
     touchScreenDisplay.fillRect(
             CAL_BUTTON_WIDTH,
@@ -1032,16 +1086,18 @@ void waterVolume() {
     touchScreenDisplay.printf("Fluid OZ's Left");
     touchScreenDisplay.setCursor((SCREEN_WIDTH / 2) - 4, (SCREEN_HEIGHT / 2) - 16);
     touchScreenDisplay.setTextColor(ILI9341_BLACK);
-    touchScreenDisplay.setTextSize(8);
+    touchScreenDisplay.setTextSize(6);
     touchScreenDisplay.printf("%0.1f", getWaterOZ(weight) + .01f);
 }
 
+// Function to convert from the load cell to Fluid OZ's
 float getWaterOZ(float _scaleWeight) {
     float _waterVol;
     _waterVol = _scaleWeight / WATER_GRAMS;
     return _waterVol;
 }
 
+// Function to recalibrate the scale for a new water bottle
 void setWaterScaleCal() {
     H2Oscale.set_scale();
     delay(WAIT_TIME);
@@ -1050,6 +1106,7 @@ void setWaterScaleCal() {
     calDone = true;
 }
 
+// How to show the instructions for setting up a new water bottle
 void showSetCalInstruction() {
     touchScreenDisplay.fillRect(INSTRUCTIONS_X_ORIGIN,
                                 INSTRUCTIONS_Y_ORIGIN,
@@ -1067,6 +1124,7 @@ void showSetCalInstruction() {
             "4.All done!");
 }
 
+// Function to determin what to do on the calibration menu
 void setCalMenu() {
     Serial.printf("Water Set Cal waiting for touch\n");
     waterScaleCalButtonMenuSelect();
@@ -1083,6 +1141,7 @@ void setCalMenu() {
     }
 }
 
+// Function to determin what button is pressed on the calibration menu
 void waterScaleCalButtonMenuSelect() {
     // Retrieve a point
     TS_Point touchedPoint = capacitiveTouchScreen.getPoint();
@@ -1117,6 +1176,7 @@ void waterScaleCalButtonMenuSelect() {
     }
 }
 
+// How to show the calibration button on the screen
 void SetCalButton() {
     if (setCalButtonPressed) {
         touchScreenDisplay.fillRect(SET_CAL_BUTTON_X_ORIGIN,
@@ -1145,40 +1205,71 @@ void SetCalButton() {
     }
 }
 
-void backGroundNP() {
+// Funtion to fill the NP's with one soild color
+void fillBackGroundStrip(uint16_t _HexColor) {
     NPBackGroundStrip.clear();
-    NPBackGroundStrip.setPixelColor(NP_BACKGROUND_STRIP_COUNT, NPColorArray[shownColor]);
+    for (int i = 0; i < NP_BACKGROUND_STRIP_COUNT; i++) {
+        NPBackGroundStrip.setPixelColor(i, _HexColor);
+    }
     NPBackGroundStrip.show();
 }
 
+// Function to update the background NP's color or brightness
+void backGroundNP() {
+    nightLighting();
+    NPBackGroundStrip.clear();
+    fillBackGroundStrip(NPColorArray[shownColor]);
+}
+
+// Function to increase the brightness of the background NPs
 void plusBrightnessNP() {
-    NPBackGroundStrip.setBrightness(NPBrightness + BRIGHTNESS_INCRAMENT);
+    Serial.println("PLUS * PLUS");
+    NPBackGroundStrip.setBrightness(NPBrightness += BRIGHTNESS_INCRAMENT);
     NPBackGroundStrip.show();
 }
 
+// Function to decrease the brightness of the background NPs
 void lessBrightnessNP() {
-    NPBackGroundStrip.setBrightness(NPBrightness - BRIGHTNESS_INCRAMENT);
+    Serial.println("LESS * LESS");
+    NPBackGroundStrip.setBrightness(NPBrightness -= BRIGHTNESS_INCRAMENT);
     NPBackGroundStrip.show();
 }
 
+// Function to turn off the background NPs
 void turnOffBackGroundNP() {
+    Serial.println("OFF * OFF");
     NPBackGroundStrip.setBrightness(0);
     NPBackGroundStrip.show();
 }
 
+// Function to turn on the background NPs
 void turnOnBackGroundNP() {
+    Serial.println("ON * ON");
     NPBackGroundStrip.setBrightness(NPBrightness);
+    fillBackGroundStrip(NPColorArray[shownColor]);
     NPBackGroundStrip.show();
 }
 
+// Function to adjust the background NPs for the given light conditions and time of day
 void nightLighting() {
     timeOfDay = Time.hour();
-    if (timeOfDay > 18) {
-        NPBackGroundStrip.setBrightness(NPBrightness / 2);
+    if (!lightButtonPressed && brightnessTimer.isTimerReady()) {
+        ambentBrightness = analogRead(AMB_LIGHT_PIN);
+        mappedAmbentBrightness = map(ambentBrightness, 0, 2200, 1, 254);
+        NPBackGroundStrip.setBrightness(mappedAmbentBrightness);
+        NPBrightness = mappedAmbentBrightness;
+        if (timeOfDay > 18) {
+            NPBackGroundStrip.setBrightness(NPBrightness / 2);
+            fillBackGroundStrip(NPColorArray[shownColor]);
+            NPBackGroundStrip.show();
+        }
+        // fillBackGroundStrip(NPColorArray[shownColor]);
         NPBackGroundStrip.show();
+        brightnessTimer.startTimer(100);
     }
 }
 
+// Function to send the readings from the water scale to the adafruit dashboard
 void publishReadings() {
     MQTT_connect();
     if ((millis() - last) > 120000) {
@@ -1197,6 +1288,7 @@ void publishReadings() {
     }
 }
 
+// Function to ensure connection to the adafruit dashboard **Credit to Brian Rashap**
 void MQTT_connect() {
     int8_t ret;
     // Stop if already connected.
@@ -1214,6 +1306,7 @@ void MQTT_connect() {
     Serial.printf("MQTT Connected!\n");
 }
 
+// Function to check that the screen is working by showing a few solid colors
 unsigned long testFillScreen() {
     unsigned long start = micros();
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
@@ -1229,10 +1322,12 @@ unsigned long testFillScreen() {
     return micros() - start;
 }
 
+// Function to draw a fram around the soild colors
 void drawFrame() {
     touchScreenDisplay.drawRect(FRAME_X_ORIGIN, FRAME_Y_ORIGIN, FRAME_WIDTH, FRAME_HEIGHT, ILI9341_BLACK);
 }
 
+// Function to draw reactangles in side each other to test the screen, also looks pretty neat
 unsigned long testRects(uint16_t color) {
     unsigned long start;
     int n, i, i2,
@@ -1248,6 +1343,7 @@ unsigned long testRects(uint16_t color) {
     return micros() - start;
 }
 
+// Function to draw reactangles in side each other to test the screen, also looks pretty neat
 unsigned long testFilledRects(uint16_t color1, uint16_t color2) {
     unsigned long start, t = 0;
     int n, i, i2,
