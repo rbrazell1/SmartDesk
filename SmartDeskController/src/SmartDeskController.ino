@@ -1306,7 +1306,7 @@ void MQTT_connect() {
     Serial.printf("MQTT Connected!\n");
 }
 
-// Funtion to check that the screen is working by showing a few solid colors
+// Function to check that the screen is working by showing a few solid colors
 unsigned long testFillScreen() {
     unsigned long start = micros();
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
