@@ -245,6 +245,7 @@ Adafruit_MQTT_Publish mqttPubWaterWeight = Adafruit_MQTT_Publish(&mqtt, AIO_USER
 Adafruit_NeoPixel NPCalendarStrip(NP_CALENDAR_STRIP_COUNT, NP_CALENDAR_STRIP_PIN, WS2812);
 Adafruit_NeoPixel NPBackGroundStrip(NP_BACKGROUND_STRIP_COUNT, NP_BACKGROUND_STRIP_PIN, WS2812);
 
+// Starting the desk up
 void setup() {
     Serial.begin(115200);
     waitFor(Serial.isConnected, 3000);
@@ -264,6 +265,7 @@ void setup() {
     // delay(5000);
 }
 
+// Largely controlled by the touch screen menus
 void loop() {
     menuSelect();
     nightLighting();
@@ -285,11 +287,13 @@ void menuSelect() {
     }
 }
 
+// Function to ensure the time function of Particle to connected and to get the day
 void timeSetUp() {
     dayOfMonth = Time.day(-6);
     Serial.printf("The day is %i\n", dayOfMonth);
 }
 
+// Function to start the touch part of the touch screen display
 void setUpTouchScreen() {
     touchScreenDisplay.fillScreen(ILI9341_BLACK);
     capacitiveTouchScreen.begin(TOUCH_SENSITIVITY);
@@ -299,6 +303,7 @@ void setUpTouchScreen() {
     newButtonPressed = false;
 }
 
+// Function to start the dislpay part of the touch screen display
 void displaySetUp() {
     Serial.println("Touch Screen Test!");
     touchScreenDisplay.begin();
@@ -334,6 +339,7 @@ void displaySetUp() {
     // delay(5000);
 }
 
+// Function to start the water scale
 void scaleSetUp() {
     WiFi.connect();
     setWaterScaleCal();
@@ -341,6 +347,7 @@ void scaleSetUp() {
     publishTimer.startTimer(30000);
 }
 
+// Function to start the NPs
 void NPSetUp() {
     pinMode(AMB_LIGHT_PIN, INPUT);
     brightnessTimer.startTimer(100);
@@ -359,6 +366,7 @@ void NPSetUp() {
     NPCalendarStrip.show();
 }
 
+// Function to set the calendar NPs correctly for the given day
 void outLineCalendarNP() {
     NPCalendarStrip.clear();
     for (int i = 0; i < NP_CALENDAR_STRIP_COUNT; i += 2) {
@@ -369,6 +377,7 @@ void outLineCalendarNP() {
     NPCalendarStrip.show();
 }
 
+// Function to determin what to do on the home menu
 void homeMenu() {
     Serial.printf("Checking if home menu touched anywhere\n");
     homeButtonMenuSelect();
@@ -430,6 +439,7 @@ void lightButton() {
     }
 }
 
+// How to show the waterButton on the screen
 void waterButton() {
     if (waterButtonPressed) {
         touchScreenDisplay.fillRect(WATER_BUTTON_X_ORIGIN,
